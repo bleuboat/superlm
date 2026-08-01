@@ -22,15 +22,15 @@ except ModuleNotFoundError:
 
 __all__ = ['WorkSpace', 'command']
 
-def _get_workspace() -> str:
+def _get_workspace_path() -> str:
     dotenv.load_dotenv()
     return os.getenv('WORKSPACE_PATH')
 
-WORKSPACE_PATH = _get_workspace()
+WORKSPACE_PATH = _get_workspace_path()
 
 if WORKSPACE_PATH is None:
     dotenv.set_key('.env', 'WORKSPACE_PATH', 'workspace')
-    WORKSPACE_PATH = _get_workspace()
+    WORKSPACE_PATH = _get_workspace_path()
 
 class WorkSpace:
     name: str
@@ -160,6 +160,7 @@ class WorkSpace:
         ):
             config.check()
 
+    # TODO: train
     def train(self, **steps: int) -> None:
         # start
         self.check()
