@@ -29,7 +29,7 @@ class Trainer:
         self.losses = []
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100)
-        self.optimizer = optim.AdamW(model.parameters(), **adam_kwargs)
+        self.optimizer = optim.AdamW(model.parameters(), **adam_config)
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
         self.optimizer.zero_grad()
 
