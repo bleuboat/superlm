@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import os
 import ast
-import time
 import json
 import torch
 import dotenv
 
 from torch._prims_common import DeviceLikeType
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 from .config import *
 from .tokenizer import Tokenizer
@@ -23,15 +22,15 @@ except ModuleNotFoundError:
 
 __all__ = ['WorkSpace', 'command']
 
-def _get_workspace_path() -> str:
+def get_workspace_path() -> str:
     dotenv.load_dotenv()
+    path = os.getenv('WORKSPACE_PATH')
+    if path is None:
+        dotenv.set_key('.env', 'WORKSPACE_PATH', 'workspace')
+        return get_workspace_path()
     return os.getenv('WORKSPACE_PATH')
 
-WORKSPACE_PATH = _get_workspace_path()
-
-if WORKSPACE_PATH is None:
-    dotenv.set_key('.env', 'WORKSPACE_PATH', 'workspace')
-    WORKSPACE_PATH = _get_workspace_path()
+WORKSPACE_PATH = get_workspace_path()
 
 class WorkSpace:
     name: str
@@ -42,7 +41,7 @@ class WorkSpace:
     streamer: Streamer
     model: Transformer
     trainer: Trainer
-    special_tokens: list[str]
+    special_tokens: set[str]
     model_config: ModelConfig
     generation_config: GenerationConfig
     training_config: TrainingConfig
@@ -60,7 +59,7 @@ class WorkSpace:
         else:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.special_tokens = []
+        self.special_tokens = set()
         self.model_config = ModelConfig()
         self.generation_config = GenerationConfig()
         self.training_config = TrainingConfig()
@@ -151,7 +150,7 @@ class WorkSpace:
     def config(self, **config) -> None:
         for k, v in config.items():
             if k == 'special_tokens':
-                self.special_tokens = [f'<{token.upper()}>' for token in v]
+                self.special_tokens = set(f'<{token.upper()}>' for token in v)
             elif k in ModelConfig.params:
                 self.model_config[k] = v
             elif k in GenerationConfig.params:
@@ -169,11 +168,12 @@ class WorkSpace:
             self.adam_config,
         ):
             config.check()
-
-    def train(self, **steps: int) -> None:
+    
+    def train(self, prompt: str = '', length: int | None = None, steps: Sequence[int] | None = None) -> None:
         self.check()
+        self.save()
         self.model.train()
-        self.trainer.train(**steps)
+        self.trainer.train(prompt, length, steps)
         self.model.eval()
         self.save()
 
@@ -222,7 +222,7 @@ class WorkSpace:
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
-        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.training_config, self.adam_config)
+        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.path, self.inputs.values(), self.training_config, self.adam_config)
 
     def save(self) -> None:
         with open(f'{self.path}/vocab.json', 'w', encoding='utf-8') as f:
@@ -258,7 +258,7 @@ def command() -> None:
         args, kwargs = _get_args(command[1:])
 
         match command[0]:
-            case 'set' | 'train' | 'generate' if not workspace:
+            case 'set' | 'info' | 'train' | 'generate' if not workspace:
                 print('Error: Workspace not set')
 
             case 'workspace':
@@ -266,6 +266,9 @@ def command() -> None:
 
             case 'set':
                 workspace.config(*args, **kwargs)
+
+            case 'info':
+                workspace.info(*args, **kwargs)
 
             case 'train':
                 workspace.train(*args, **kwargs)

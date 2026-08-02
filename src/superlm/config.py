@@ -93,7 +93,7 @@ class Config(dict[str, Parameter]):
 
     def update(self, /, **kwargs: Any) -> None:
         for k, v in kwargs.items():
-            self[k] = type(self[k])(v)
+            self[k] = v
 
     @classmethod
     def _get_params(cls) -> None:

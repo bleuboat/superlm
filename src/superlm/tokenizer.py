@@ -66,8 +66,7 @@ class Tokenizer:
     __call__ = encode
     
     @classmethod
-    def from_data(cls, data: str | Iterable[str], special_tokens: Iterable[str] = ()) -> Tokenizer:
+    def from_data(cls, data: str | Iterable[str], special_tokens: set[str] = ()) -> Tokenizer:
         data = data if isinstance(data, str) else ''.join(data)
-        tokens = set(re.findall(PATTERN, data))
-        tokens.update(f'<{token.upper()}>' for token in special_tokens)
+        tokens = set(re.findall(PATTERN, data)) | special_tokens
         return cls(sorted(tokens))

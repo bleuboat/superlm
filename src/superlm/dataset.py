@@ -7,8 +7,8 @@ from .tokenizer import Tokenizer
 __all__ = ['TextDataset']
 
 class TextDataset(Dataset):
-    def __init__(self, tokenizer: Tokenizer, data: str | Iterable[str], block_size: int, special_tokens: Container[str] = ()) -> None:
-        self.dataset = tokenizer([data] if isinstance(data, str) else data, special_tokens=special_tokens, device='cpu')
+    def __init__(self, tokenizer: Tokenizer, data: Iterable[str], block_size: int, special_tokens: Container[str] | None = None) -> None:
+        self.dataset = tokenizer(data, special_tokens=special_tokens, device='cpu')
         self.block_size = block_size
         self.length = 0
         self.indexes = []
