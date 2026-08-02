@@ -8,7 +8,7 @@ import torch
 import dotenv
 
 from torch._prims_common import DeviceLikeType
-from typing import Sequence
+from typing import Any, Sequence
 
 from .config import *
 from .tokenizer import Tokenizer
@@ -269,7 +269,7 @@ def command() -> None:
                     del workspace
                 break
 
-def _get_args(command: Sequence[str]) -> tuple[list[str], dict[str, str]]:
+def _get_args(command: Sequence[str]) -> tuple[list[Any], dict[str, Any]]:
     args = []
     kwargs = {}
     for arg in command[1:]:
