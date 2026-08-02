@@ -279,13 +279,7 @@ def _get_args(command: Sequence[str]) -> tuple[list[str], dict[str, str]]:
             kwarg = arg.split('=')
             kwargs[kwarg[0]] = kwarg[1]
     for i in range(len(args)):
-        args[i] = _convert_arg(args[i])
+        args[i] = ast.literal_eval(args[i])
     for key in kwargs:
-        kwargs[key] = _convert_arg(kwargs[key])
+        kwargs[key] = ast.literal_eval(kwargs[key])
     return args, kwargs
-
-def _convert_arg(arg: str) -> object:
-    try:
-        return ast.literal_eval(arg)
-    except (ValueError, SyntaxError):
-        return arg
