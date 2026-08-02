@@ -8,7 +8,7 @@ import torch
 import dotenv
 
 from torch._prims_common import DeviceLikeType
-from typing import Any, Sequence
+from typing import Any, Iterable
 
 from .config import *
 from .tokenizer import Tokenizer
@@ -39,6 +39,7 @@ class WorkSpace:
     device: torch.device
     inputs: dict[str, str]
     tokenizer: Tokenizer
+    streamer: Streamer
     model: Transformer
     trainer: Trainer
     special_tokens: list[str]
@@ -46,7 +47,6 @@ class WorkSpace:
     generation_config: GenerationConfig
     training_config: TrainingConfig
     adam_config: AdamConfig
-    _train_losses: list[float]
 
     def __init__(self, name: str, *, seed: int | None = None, device: DeviceLikeType | None = None) -> None:
         self.name = name
@@ -68,10 +68,9 @@ class WorkSpace:
 
         self._inputs = None
         self._tokenizer = None
+        self._streamer = None
         self._model = None
         self._trainer = None
-
-        self._train_losses = []
         
         try:
             os.listdir(self.path)
@@ -92,6 +91,12 @@ class WorkSpace:
         return self._tokenizer
 
     @property
+    def streamer(self) -> Streamer:
+        if self._streamer is None:
+            self.setup_streamer()
+        return self._streamer
+
+    @property
     def model(self) -> Transformer:
         if self._model is None:
             self.setup_model()
@@ -106,6 +111,10 @@ class WorkSpace:
     @tokenizer.setter
     def tokenizer(self, value: Tokenizer) -> None:
         self._tokenizer = value
+
+    @streamer.setter
+    def streamer(self, value: Streamer) -> None:
+        self._streamer = value
 
     @model.setter
     def model(self, value: Transformer) -> None:
@@ -161,20 +170,13 @@ class WorkSpace:
         ):
             config.check()
 
-    # TODO: train
     def train(self, **steps: int) -> None:
-        # start
         self.check()
         self.model.train()
-        start_time = time.time()
-
-        # loop
-        pass
-
-        # end
+        self.trainer.train(**steps)
         self.save()
         if plt is not None:
-            x, y = zip(*self._losses)
+            x, y = zip(*self.trainer.losses)
             plt.plot(x, y)
             plt.xlabel('num_steps')
             plt.ylabel('loss')
@@ -190,7 +192,7 @@ class WorkSpace:
         else:
             inputs_tensor = self.tokenizer([inputs], device=self.device)
         if stream:
-            streamer = Streamer(self.tokenizer)
+            streamer = self.streamer
         else:
             streamer = None
         res = self.model.generate(inputs_tensor, streamer=streamer, device=self.device, **kwargs)
@@ -210,6 +212,9 @@ class WorkSpace:
 
     def setup_tokenizer(self) -> None:
         self.tokenizer = Tokenizer.from_data(self.inputs.values(), self.special_tokens)
+
+    def setup_streamer(self) -> None:
+        self.streamer = Streamer(self.tokenizer)
 
     def setup_model(self) -> None:
         self.model = Transformer(self.tokenizer, self.model_config, self.generation_config)
@@ -249,17 +254,17 @@ def command() -> None:
         command = input('>>> ').lower().split()
         if not command:
             continue
-        args, kwargs = _get_args(command)
+        args, kwargs = _get_args(command[1:])
 
         match command[0]:
             case 'set' | 'train' | 'generate' if not workspace:
                 print('Error: Workspace not set')
-                
+
             case 'workspace':
-                workspace = WorkSpace(command[1])
+                workspace = WorkSpace(*args, **kwargs)
 
             case 'set':
-                workspace.config(**kwargs)
+                workspace.config(*args, **kwargs)
 
             case 'train':
                 workspace.train(*args, **kwargs)
@@ -273,10 +278,10 @@ def command() -> None:
                     del workspace
                 break
 
-def _get_args(command: Sequence[str]) -> tuple[list[Any], dict[str, Any]]:
+def _get_args(params: Iterable[str]) -> tuple[list[Any], dict[str, Any]]:
     args = []
     kwargs = {}
-    for arg in command[1:]:
+    for arg in params:
         if '=' not in arg:
             args.append(arg)
         else:

@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import math
 import time
 from torch import Tensor
-from typing import Container, Iterable
+from typing import Container, Iterable, Iterator
 from .tokenizer import Tokenizer
 from .model import Transformer
 
@@ -64,7 +64,6 @@ class Trainer:
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
         self.optimizer.zero_grad()
 
-    def setup(self):
         self.dataset = TextDataset(self.tokenizer, self.workspace.data, self.block_size)
         self.dataloader = DataLoader(
             dataset=self.dataset,
@@ -75,8 +74,11 @@ class Trainer:
         )
         self.dataloader_iter = iter(self.dataloader)
         self.num_steps = (self.dataset.length * self.epochs) // (self.block_size * self.batch_size)
+
+    def __iter__(self) -> Iterator[int]:
+        return self
     
-    def step(self, device) -> int:
+    def __next__(self, device) -> int:
         if self.step >= self.num_steps:
             raise StopIteration
         self.step += 1
