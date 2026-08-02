@@ -1,4 +1,4 @@
-from src.superlm import *
+from superlm import *
 space = WorkSpace('css', seed=42)
 space.config(special_tokens=('bos', 'eos', 'pad'))
 space.config(n_layer=4, n_embd=256, n_head=4, dropout=0.2)
