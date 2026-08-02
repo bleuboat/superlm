@@ -2,59 +2,28 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import math
 import time
-from torch import Tensor
-from typing import Container, Iterable, Iterator
+from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
 from .model import Transformer
+from .dataset import TextDataset
 
 __all__ = ['Trainer']
 
-class TextDataset(Dataset):
-    def __init__(self, tokenizer: Tokenizer, data: str | Iterable[str], block_size: int, special_tokens: Container[str] = ()) -> None:
-        self.dataset = tokenizer([data] if isinstance(data, str) else data, special_tokens=special_tokens, device='cpu')
-        self.block_size = block_size
-        self.length = 0
-        self.indexes = []
-        for i in range(len(self.dataset)):
-            pads = torch.nonzero(self.dataset[i] == tokenizer.pad_token_ix)
-            length = pads[0].item() if pads.shape[0] else len(self.dataset[i])
-            self.length += length
-            for j in range(max(length - self.block_size, 1)):
-                self.indexes.append((i, j))
-
-    def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
-        i, j = self.indexes[index]
-        inputs  = self.dataset[i, j     : j + self.block_size    ]
-        targets = self.dataset[i, j + 1 : j + self.block_size + 1]
-        return inputs, targets
-
-    def __len__(self) -> int:
-        return len(self.indexes)
-
 class Trainer:
-    def __init__(
-        self,
-        tokenizer: Tokenizer,
-        model: Transformer,
-        epochs: int,
-        block_size: int,
-        batch_size: int,
-        accumulation_steps: int,
-        **adam_kwargs,
-    ) -> None:
+    def __init__(self, tokenizer: Tokenizer, model: Transformer, device: torch.device, training_config: TrainingConfig, adam_config: AdamConfig) -> None:
         super().__init__()
         self.tokenizer = tokenizer
         self.model = model
 
         self.smooth_loss = math.log(self.tokenizer.vocab_size)
         self.best_loss = None
-        self.epochs = epochs
-        self.block_size = block_size
-        self.batch_size = batch_size
-        self.accumulation_steps = accumulation_steps
+        self.epochs = training_config.epochs
+        self.block_size = training_config.block_size
+        self.batch_size = training_config.batch_size
+        self.accumulation_steps = training_config.accumulation_steps
         self.num_steps = 0
         self.step = 0
         self.losses = []
@@ -74,21 +43,16 @@ class Trainer:
         )
         self.dataloader_iter = iter(self.dataloader)
         self.num_steps = (self.dataset.length * self.epochs) // (self.block_size * self.batch_size)
-
-    def __iter__(self) -> Iterator[int]:
-        return self
     
-    def __next__(self, device) -> int:
-        if self.step >= self.num_steps:
-            raise StopIteration
+    def train_step(self) -> int:
         self.step += 1
         try:
             inputs, targets = next(self.dataloader_iter)
         except StopIteration:
             self.dataloader_iter = iter(self.dataloader)
             inputs, targets = next(self.dataloader_iter)
-        inputs  = inputs .to(device, non_blocking=True)
-        targets = targets.to(device, non_blocking=True)
+        inputs  = inputs .to(self.device, non_blocking=True)
+        targets = targets.to(self.device, non_blocking=True)
         outputs = self.model(inputs)
         loss = self.criterion(outputs.view(-1, self.model.config.vocab_size), targets.view(-1))
         (loss / self.accumulation_steps).backward()
@@ -98,6 +62,21 @@ class Trainer:
             self.scheduler.step()
             self.optimizer.zero_grad()
         return self.step
+
+    def train(self, **steps: int) -> None:
+        log_step = steps.get('log', 50)
+        sample_step = steps.get('sample', 100)
+        checkpoint_step = steps.get('checkpoint', 200)
+        while True:
+            step = self.train_step()
+            if step % log_step == 0:
+                self.log()
+            if step % sample_step == 0:
+                self.sample()
+            if step % checkpoint_step == 0:
+                self.checkpoint()
+            if step >= self.num_steps:
+                break
 
     def log(self) -> None:
         self.losses.append((self.step, self.smooth_loss))
@@ -123,7 +102,7 @@ class Trainer:
         plt.savefig(self.workspace.fig_path, dpi=300)
         plt.show()
         
-    def save(self) -> None:
+    def checkpoint(self) -> None:
         if self.best_loss is not None and self.smooth_loss >= self.best_loss:
             return
         self.best_loss = self.smooth_loss
@@ -201,20 +180,6 @@ class Trainer:
         trainer.best_loss = smooth_loss
         trainer.losses = losses
         return model, tokenizer, trainer
-
-    @staticmethod
-    def json(file: str, path: str) -> None:
-        import json
-        model, tokenizer = Trainer.load(file, train=False)
-        model.half()
-        with open(f'{path}/tokenizer.json', 'w', encoding='utf-8') as f:
-            json.dump(tokenizer.token_to_ix, f)
-        with open(f'{path}/model.json', 'w', encoding='utf-8') as f:
-            json.dump({k : v.tolist() for k, v in model.state_dict().items()}, f)
-        with open(f'{path}/config.json', 'w', encoding='utf-8') as f:
-            json.dump(model.config.to_dict(), f)
-        with open(f'{path}/generation_config.json', 'w', encoding='utf-8') as f:
-            json.dump(model.generation_config.to_dict(), f)
     
     def _lr_lambda(self, step: int) -> float:
         if not self.num_steps:

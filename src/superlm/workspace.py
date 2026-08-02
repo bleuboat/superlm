@@ -174,7 +174,9 @@ class WorkSpace:
         self.check()
         self.model.train()
         self.trainer.train(**steps)
+        self.model.eval()
         self.save()
+
         if plt is not None:
             x, y = zip(*self.trainer.losses)
             plt.plot(x, y)
@@ -183,7 +185,6 @@ class WorkSpace:
             plt.grid(True)
             plt.savefig(f'{self.path}/loss.png', dpi=300)
             plt.show()
-        self.model.eval()
 
     def generate(self, inputs: str, *, stream: bool = False, **kwargs) -> str:
         self.check()
@@ -221,7 +222,7 @@ class WorkSpace:
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
-        self.trainer = Trainer(self.tokenizer, self.model, self.training_config, self.adam_config)
+        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.training_config, self.adam_config)
 
     def save(self) -> None:
         with open(f'{self.path}/vocab.json', 'w', encoding='utf-8') as f:
