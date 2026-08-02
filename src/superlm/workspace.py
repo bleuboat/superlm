@@ -236,6 +236,10 @@ class WorkSpace:
         except FileNotFoundError:
             pass
 
+    def info(self) -> None:
+        print(f'Transformer 参数量：{sum(p.numel() for p in self.model.parameters())/1e6:.2f}M')
+        print(f'数据有 {self.trainer.dataset.length} 个 token，{self.tokenizer.vocab_size} 个不同')
+
     def __repr__(self) -> str:
         return f'WorkSpace({self.name})'
 

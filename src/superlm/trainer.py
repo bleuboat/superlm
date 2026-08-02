@@ -14,7 +14,6 @@ __all__ = ['Trainer']
 
 class TextDataset(Dataset):
     def __init__(self, tokenizer: Tokenizer, data: str | Iterable[str], block_size: int, special_tokens: Container[str] = ()) -> None:
-        print('正在准备 DataLoader……')
         self.dataset = tokenizer([data] if isinstance(data, str) else data, special_tokens=special_tokens, device='cpu')
         self.block_size = block_size
         self.length = 0
@@ -46,7 +45,6 @@ class Trainer:
         accumulation_steps: int,
         **adam_kwargs,
     ) -> None:
-        print('正在准备 Trainer……')
         super().__init__()
         self.tokenizer = tokenizer
         self.model = model
@@ -67,17 +65,16 @@ class Trainer:
         self.optimizer.zero_grad()
 
     def setup(self):
-        dataset = TextDataset(self.tokenizer, self.workspace.data, self.block_size)
+        self.dataset = TextDataset(self.tokenizer, self.workspace.data, self.block_size)
         self.dataloader = DataLoader(
-            dataset=dataset,
+            dataset=self.dataset,
             batch_size=self.batch_size,
             shuffle=True,
             pin_memory=True,
             drop_last=True,
         )
         self.dataloader_iter = iter(self.dataloader)
-        self.num_steps = (dataset.length * self.epochs) // (self.block_size * self.batch_size)
-        print(f'数据有 {dataset.length} 个 token，{self.tokenizer.vocab_size} 个不同')
+        self.num_steps = (self.dataset.length * self.epochs) // (self.block_size * self.batch_size)
     
     def step(self, device) -> int:
         if self.step >= self.num_steps:

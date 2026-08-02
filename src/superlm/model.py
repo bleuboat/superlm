@@ -90,7 +90,6 @@ class Block(nn.Module):
 
 class Transformer(GenerationModule):
     def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
-        print('正在准备 Transformer……')
         super().__init__(tokenizer, config, generation_config)
         config = self.config
         self.wte = nn.Embedding(config.vocab_size, config.n_embd)
@@ -99,7 +98,6 @@ class Transformer(GenerationModule):
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
         if not self.config.tie_word_embeddings:
             self._lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        print(f'Transformer 参数量：{sum(p.numel() for p in self.parameters())/1e6:.2f}M')
 
     def lm_head(self, input: Tensor) -> Tensor:
         if not self.config.tie_word_embeddings:

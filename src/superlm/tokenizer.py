@@ -15,7 +15,6 @@ class TokenNotFoundError(LookupError):
 
 class Tokenizer:
     def __init__(self, tokens: list[str]) -> None:
-        print('正在准备 Tokenizer……')
         self.tokens = tokens
         self.vocab_size = len(tokens)
         self.token_to_ix = { ch:i for i,ch in enumerate(tokens) }
