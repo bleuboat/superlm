@@ -116,7 +116,7 @@ class ModelConfig(Config):
 
 class GenerationConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
-        self.max_length = kwargs.parameter('max_length', 20)
+        self.max_length = kwargs.parameter('max_length', 512)
         self.max_new_tokens = kwargs.parameter('max_new_tokens', None)
         self.max_time = kwargs.parameter('max_time', None)
 

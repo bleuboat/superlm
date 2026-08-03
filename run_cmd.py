@@ -1,2 +1,2 @@
-from superlm import *
+from superlm import command
 command()

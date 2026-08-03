@@ -35,6 +35,7 @@ WORKSPACE_PATH = get_workspace_path()
 class WorkSpace:
     name: str
     path: str
+    paths: dict[str, str]
     device: torch.device
     inputs: dict[str, str]
     tokenizer: Tokenizer
@@ -50,6 +51,16 @@ class WorkSpace:
     def __init__(self, name: str, *, seed: int | None = None, device: DeviceLikeType | None = None) -> None:
         self.name = name
         self.path = f'{WORKSPACE_PATH}/{name}'
+        self.paths = {
+                        'input': f'{self.path}/input.txt',
+                       'inputs': f'{self.path}/inputs',
+                   'checkpoint': f'{self.path}/checkpoint.pth',
+                       'config': f'{self.path}/config.json',
+            'generation_config': f'{self.path}/generation_config.json',
+                         'loss': f'{self.path}/loss.png',
+                        'model': f'{self.path}/model.pth',
+                        'vocab': f'{self.path}/vocab.json',
+        }
 
         if seed is not None:
             torch.manual_seed(seed)
@@ -173,7 +184,8 @@ class WorkSpace:
         self.check()
         self.save()
         self.model.train()
-        self.trainer.train(prompt, length, steps)
+        trained = self.trainer.train(prompt, length, steps)
+        self.model.load_state_dict(trained)
         self.model.eval()
         self.save()
 
@@ -183,7 +195,7 @@ class WorkSpace:
             plt.xlabel('num_steps')
             plt.ylabel('loss')
             plt.grid(True)
-            plt.savefig(f'{self.path}/loss.png', dpi=300)
+            plt.savefig(self.paths['loss'], dpi=300)
             plt.show()
 
     def generate(self, inputs: str, *, stream: bool = False, **kwargs) -> str:
@@ -201,13 +213,13 @@ class WorkSpace:
 
     def get_inputs(self) -> None:
         try:
-            self._inputs = {'input': open(f'{self.path}/input.txt', 'r', encoding='utf-8').read()}
+            self._inputs = {'input': open(self.paths['input'], 'r', encoding='utf-8').read()}
         except FileNotFoundError:
             try:
                 self._inputs = {}
-                files = os.listdir(f'{self.path}/inputs')
+                files = os.listdir(self.paths['inputs'])
                 for file in files:
-                    self._inputs[file.split('.')[0]] = open(f'{self.path}/inputs/{file}', 'r', encoding='utf-8').read()
+                    self._inputs[file.split('.')[0]] = open(f'{self.paths['inputs']}/{file}', 'r', encoding='utf-8').read()
             except FileNotFoundError:
                 raise FileNotFoundError(f'Input not found. (at {self.path})')
 
@@ -222,29 +234,33 @@ class WorkSpace:
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
-        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.path, self.inputs.values(), self.training_config, self.adam_config)
+        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.paths['checkpoint'], self.inputs.values(), self.training_config, self.adam_config)
 
     def save(self) -> None:
-        with open(f'{self.path}/vocab.json', 'w', encoding='utf-8') as f:
+        with open(self.paths['vocab'], 'w', encoding='utf-8') as f:
             json.dump(self.tokenizer.tokens, f)
-        with open(f'{self.path}/config.json', 'w', encoding='utf-8') as f:
+        with open(self.paths['config'], 'w', encoding='utf-8') as f:
             json.dump(self.model.config.to_dict(), f, indent=2)
-        with open(f'{self.path}/generation_config.json', 'w', encoding='utf-8') as f:
+        with open(self.paths['generation_config'], 'w', encoding='utf-8') as f:
             json.dump(self.model.generation_config.to_dict(), f, indent=2)
-        torch.save(self.model.state_dict(), f'{self.path}/model.pth')
+        torch.save(self.model.state_dict(), self.paths['model'])
 
     def load(self) -> None:
         try:
-            self.tokenizer = Tokenizer(json.loads(open(f'{self.path}/tokenizer.json', encoding='utf-8').read()))
-            self.model_config = ModelConfig(**json.loads(open(f'{self.path}/config.json', encoding='utf-8').read()))
-            self.generation_config = GenerationConfig(**json.loads(open(f'{self.path}/generation_config.json', encoding='utf-8').read()))
-            self.model.load_state_dict(torch.load(f'{self.path}/model.pth'))
+            self.tokenizer = Tokenizer(json.loads(open(self.paths['vocab'], encoding='utf-8').read()))
+            self.model_config = ModelConfig(**json.loads(open(self.paths['config'], encoding='utf-8').read()))
+            self.generation_config = GenerationConfig(**json.loads(open(self.paths['generation_config'], encoding='utf-8').read()))
+            self.model.load_state_dict(torch.load(self.paths['model']))
         except FileNotFoundError:
             pass
 
     def info(self) -> None:
         print(f'Transformer 参数量：{sum(p.numel() for p in self.model.parameters())/1e6:.2f}M')
         print(f'数据有 {self.trainer.dataset.length} 个 token，{self.tokenizer.vocab_size} 个不同')
+
+    def del_checkpoint(self) -> None:
+        if os.path.exists(self.paths['checkpoint']):
+            os.remove(self.paths['checkpoint'])
 
     def __repr__(self) -> str:
         return f'WorkSpace({self.name})'
@@ -258,13 +274,13 @@ def command() -> None:
         args, kwargs = _get_args(command[1:])
 
         match command[0]:
-            case 'set' | 'info' | 'train' | 'generate' if not workspace:
+            case 'set' | 'config' | 'info' | 'train' | 'eval' | 'inference' | 'generate' if not workspace:
                 print('Error: Workspace not set')
 
-            case 'workspace':
+            case 'ws' | 'work' | 'space' | 'workspace':
                 workspace = WorkSpace(*args, **kwargs)
 
-            case 'set':
+            case 'set' | 'config':
                 workspace.config(*args, **kwargs)
 
             case 'info':
@@ -273,7 +289,7 @@ def command() -> None:
             case 'train':
                 workspace.train(*args, **kwargs)
 
-            case 'generate':
+            case 'eval' | 'inference' | 'generate':
                 kwargs['stream'] = True
                 workspace.generate(*args, **kwargs)
 

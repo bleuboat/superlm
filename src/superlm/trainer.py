@@ -23,7 +23,7 @@ class Trainer:
         tokenizer: Tokenizer,
         model: Transformer,
         device: torch.device,
-        path: str,
+        checkpoint_path: str,
         data: Iterable[str],
         training_config: TrainingConfig,
         adam_config: AdamConfig,
@@ -32,7 +32,7 @@ class Trainer:
         self.tokenizer = tokenizer
         self.model = model
         self.device = device
-        self.checkpoint_path = f'{path}/checkpoint.pth'
+        self.checkpoint_path = checkpoint_path
 
         self.smooth_loss = math.log(self.tokenizer.vocab_size)
         self.best_loss = 100.0
@@ -80,7 +80,7 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, prompt: str = '', length: int | None = None, steps: Sequence[int] | None = None) -> None:
+    def train(self, prompt: str = '', length: int | None = None, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         if os.path.exists(self.checkpoint_path):
             self.restart()
         if steps is None:
@@ -96,6 +96,7 @@ class Trainer:
                 self.checkpoint()
             if step >= self.num_steps:
                 break
+        return self.model.state_dict()
 
     def log(self) -> None:
         self.losses.append((self.step, self.smooth_loss))
