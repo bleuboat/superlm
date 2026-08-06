@@ -274,32 +274,38 @@ def command() -> None:
         command = input('>>> ').lower().split()
         if not command:
             continue
-        args, kwargs = _get_args(command[1:])
 
-        match command[0]:
-            case 'set' | 'config' | 'info' | 'train' | 'eval' | 'inference' | 'generate' if not workspace:
-                print('Error: Workspace not set')
+        try:
+            args, kwargs = _get_args(command[1:])
 
-            case 'ws' | 'work' | 'space' | 'workspace':
-                workspace = WorkSpace(*args, **kwargs)
+            match command[0]:
+                case 'set' | 'config' | 'info' | 'train' | 'eval' | 'inference' | 'generate' if not workspace:
+                    print('Error: Workspace not set')
 
-            case 'set' | 'config':
-                workspace.config(*args, **kwargs)
+                case 'ws' | 'work' | 'space' | 'workspace':
+                    workspace = WorkSpace(*args, **kwargs)
 
-            case 'info':
-                workspace.info(*args, **kwargs)
+                case 'set' | 'config':
+                    workspace.config(*args, **kwargs)
 
-            case 'train':
-                workspace.train(*args, **kwargs)
+                case 'info':
+                    workspace.info(*args, **kwargs)
 
-            case 'eval' | 'inference' | 'generate':
-                kwargs['stream'] = True
-                workspace.generate(*args, **kwargs)
+                case 'train':
+                    workspace.train(*args, **kwargs)
 
-            case 'q' | 'quit' | 'exit':
-                if workspace:
-                    del workspace
-                break
+                case 'eval' | 'inference' | 'generate':
+                    kwargs['stream'] = True
+                    workspace.generate(*args, **kwargs)
+
+                case 'q' | 'quit' | 'exit':
+                    if workspace:
+                        del workspace
+                    break
+
+        except Exception as e:
+            print(f'{type(e).__name__}: {e}')
+            continue
 
 def _get_args(params: Iterable[str]) -> tuple[list[Any], dict[str, Any]]:
     args = []
