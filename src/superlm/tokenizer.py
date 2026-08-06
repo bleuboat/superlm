@@ -49,12 +49,12 @@ class Tokenizer:
         
         return torch.tensor([_encode(tokens) for tokens in tokens_list], dtype=torch.long, device=torch.device(device))
     
-    def decode(self, contents: Tensor | Iterable[Tensor], skip_special_tokens: bool = True) -> list[str]:
+    def decode(self, contents: Tensor | Iterable[Tensor]) -> list[str]:
         def _decode(content: Tensor) -> str:
             out = []
             for token in content:
                 ix = token.item()
-                if not (skip_special_tokens and ix in (self.bos_token_ix, self.eos_token_ix, self.pad_token_ix)):
+                if ix not in (self.bos_token_ix, self.eos_token_ix, self.pad_token_ix):
                     out.append(self.tokens[ix])
             return ''.join(out)
         return [_decode(content) for content in contents]

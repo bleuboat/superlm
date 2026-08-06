@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 from torch._prims_common import DeviceLikeType
+from typing import Generator
 from .logits_process import (
     LogitsProcessorList,
     TemperatureLogitsWarper,
@@ -33,26 +35,14 @@ class GenerationModule(nn.Module):
         self.generation_config.eos_token_ix = tokenizer.eos_token_ix
         self.generation_config.pad_token_ix = tokenizer.pad_token_ix
 
-    @torch.no_grad()
-    def generate(
-        self,
-        inputs: torch.Tensor | None = None,
-        streamer: Streamer | None = None,
-        device: DeviceLikeType | None = None,
-        **kwargs,
-    ) -> torch.Tensor:
+    def _get_generation_config(self, inputs: Tensor, **kwargs) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
-
-        if inputs is None:
-            inputs = torch.tensor([[generation_config.bos_token_ix]], dtype=torch.long, device=device)
-
-        if streamer is not None:
-            streamer.put(inputs.cpu())
-
         if generation_config.max_new_tokens is not None:
             generation_config.max_length = generation_config.max_new_tokens + inputs.shape[-1]
+        return generation_config
 
+    def _get_processors(self, generation_config: GenerationConfig) -> LogitsProcessorList:
         processors = LogitsProcessorList()
         if generation_config.repetition_penalty is not None and generation_config.repetition_penalty != 1.0:
             processors.append(RepetitionPenaltyLogitsProcessor(penalty=generation_config.repetition_penalty))
@@ -63,13 +53,25 @@ class GenerationModule(nn.Module):
                 processors.append(TopKLogitsWarper(generation_config.top_k))
             if generation_config.top_p is not None and generation_config.top_p < 1.0:
                 processors.append(TopPLogitsWarper(generation_config.top_p))
+        return processors
 
+    def _get_criteria(self, generation_config: GenerationConfig) -> StoppingCriteriaList:
         criteria = StoppingCriteriaList()
         criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
         if generation_config.max_length is not None:
             criteria.append(MaxLengthCriteria(max_length=generation_config.max_length))
         if generation_config.max_time is not None:
             criteria.append(MaxTimeCriteria(max_time=generation_config.max_time))
+        return criteria
+
+    @torch.no_grad()
+    def generate(self, inputs: Tensor, streamer: Streamer | None = None, **kwargs) -> Tensor:
+        generation_config = self._get_generation_config(inputs, **kwargs)
+        processors = self._get_processors(generation_config)
+        criteria = self._get_criteria(generation_config)
+
+        if streamer is not None:
+            streamer.put(inputs.cpu())
 
         do_sample = generation_config.do_sample
         unfinished = True
@@ -89,3 +91,24 @@ class GenerationModule(nn.Module):
         if streamer is not None:
             streamer.end()
         return inputs
+
+    @torch.no_grad()
+    def api(self, inputs: Tensor, **kwargs) -> Generator[Tensor]:
+        generation_config = self._get_generation_config(inputs, **kwargs)
+        processors = self._get_processors(generation_config)
+        criteria = self._get_criteria(generation_config)
+
+        do_sample = generation_config.do_sample
+        unfinished = True
+        while unfinished:
+            outputs = self(inputs)
+            logits = outputs[:, -1, :]
+            score = processors(inputs, logits)
+            if do_sample:
+                probs = F.softmax(score, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+            else:
+                next_token = torch.argmax(score, dim=-1).unsqueeze(1)
+            yield next_token
+            inputs = torch.cat((inputs, next_token), dim=-1)
+            unfinished = not criteria(inputs)
