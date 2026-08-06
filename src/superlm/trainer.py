@@ -12,8 +12,8 @@ from typing import Iterable, Sequence
 
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
-from .model import Transformer
 from .dataset import TextDataset
+from .generation import GenerationModule
 
 __all__ = ['Trainer']
 
@@ -21,7 +21,7 @@ class Trainer:
     def __init__(
         self,
         tokenizer: Tokenizer,
-        model: Transformer,
+        model: GenerationModule,
         device: torch.device,
         checkpoint_path: str,
         data: Iterable[str],

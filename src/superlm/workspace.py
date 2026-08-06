@@ -43,7 +43,6 @@ class WorkSpace:
     streamer: Streamer
     model: GenerationModule
     trainer: Trainer
-    special_tokens: set[str]
     model_config: ModelConfig
     generation_config: GenerationConfig
     training_config: TrainingConfig
@@ -71,7 +70,6 @@ class WorkSpace:
         else:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.special_tokens = set()
         self.model_config = ModelConfig()
         self.generation_config = GenerationConfig()
         self.training_config = TrainingConfig()
@@ -159,18 +157,17 @@ class WorkSpace:
         other.copy(self)
         return other
 
-    def config(self, **config) -> None:
-        for k, v in config.items():
-            if k == 'special_tokens':
-                self.special_tokens = set(f'<{token.upper()}>' for token in v)
-            elif k in ModelConfig.params:
-                self.model_config[k] = v
-            elif k in GenerationConfig.params:
-                self.generation_config[k] = v
-            elif k in TrainingConfig.params:
-                self.training_config[k] = v
-            elif k in AdamConfig.params:
-                self.adam_config[k] = v
+    def config(self, **configs) -> None:
+        for k, v in configs.items():
+            for config in (
+                self.model_config,
+                self.generation_config,
+                self.training_config,
+                self.adam_config,
+            ):
+                if k in config.keys():
+                    config[k] = v
+                    break
 
     def check(self) -> None:
         for config in (
@@ -201,10 +198,7 @@ class WorkSpace:
 
     def generate(self, inputs: str, *, stream: bool = False, **kwargs) -> str:
         self.check()
-        if self.tokenizer.bos_token_ix is not None:
-            inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=('bos'))
-        else:
-            inputs_tensor = self.tokenizer([inputs], device=self.device)
+        inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=('bos'))
         if stream:
             streamer = self.streamer
         else:
@@ -225,7 +219,7 @@ class WorkSpace:
                 raise FileNotFoundError(f'Input not found. (at {self.path})')
 
     def setup_tokenizer(self) -> None:
-        self.tokenizer = Tokenizer.from_data(self.inputs.values(), self.special_tokens)
+        self.tokenizer = Tokenizer.from_data(self.inputs.values())
 
     def setup_streamer(self) -> None:
         self.streamer = Streamer(self.tokenizer)

@@ -65,12 +65,11 @@ class GenerationModule(nn.Module):
                 processors.append(TopPLogitsWarper(generation_config.top_p))
 
         criteria = StoppingCriteriaList()
+        criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
         if generation_config.max_length is not None:
             criteria.append(MaxLengthCriteria(max_length=generation_config.max_length))
         if generation_config.max_time is not None:
             criteria.append(MaxTimeCriteria(max_time=generation_config.max_time))
-        if generation_config.eos_token_ix is not None:
-            criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
 
         do_sample = generation_config.do_sample
         unfinished = True

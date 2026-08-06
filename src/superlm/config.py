@@ -95,10 +95,6 @@ class Config(dict[str, Parameter]):
         for k, v in kwargs.items():
             self[k] = v
 
-    @classmethod
-    def _get_params(cls) -> None:
-        cls.params = cls().keys()
-
 class ModelConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
         self.model_type = kwargs.parameter('model_type')
@@ -144,8 +140,3 @@ class AdamConfig(Config):
         self.betas = kwargs.parameter('betas', (0.9, 0.999))
         self.eps = kwargs.parameter('eps', 1e-8)
         self.weight_decay = kwargs.parameter('weight_decay', 0.01)
-
-ModelConfig._get_params()
-GenerationConfig._get_params()
-TrainingConfig._get_params()
-AdamConfig._get_params()

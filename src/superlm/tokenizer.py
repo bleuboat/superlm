@@ -18,13 +18,9 @@ class Tokenizer:
         self.tokens = tokens
         self.vocab_size = len(tokens)
         self.token_to_ix = { ch:i for i,ch in enumerate(tokens) }
-        self.bos_token_ix = self.eos_token_ix = self.pad_token_ix = None
-        if '<BOS>' in self.token_to_ix:
-            self.bos_token_ix = self.token_to_ix['<BOS>']
-        if '<EOS>' in self.token_to_ix:
-            self.eos_token_ix = self.token_to_ix['<EOS>']
-        if '<PAD>' in self.token_to_ix:
-            self.pad_token_ix = self.token_to_ix['<PAD>']
+        self.bos_token_ix = self.token_to_ix['<BOS>']
+        self.eos_token_ix = self.token_to_ix['<EOS>']
+        self.pad_token_ix = self.token_to_ix['<PAD>']
 
     def encode(self, contents: Iterable[str], *, special_tokens: Container[str] | None = None, device: DeviceLikeType) -> Tensor:
         tokens_list = []
@@ -37,16 +33,16 @@ class Tokenizer:
 
         def _encode(tokens: list[str]) -> list[int]:
             out = []
-            if (special_tokens is None or 'bos' in special_tokens) and self.bos_token_ix is not None:
+            if special_tokens is None or 'bos' in special_tokens:
                 out.append(self.bos_token_ix)
             for token in tokens:
                 if token in self.token_to_ix:
                     out.append(self.token_to_ix[token])
                 else:
                     raise TokenNotFoundError(token, text=''.join(tokens))
-            if (special_tokens is None or 'eos' in special_tokens) and self.eos_token_ix is not None:
+            if special_tokens is None or 'eos' in special_tokens:
                 out.append(self.eos_token_ix)
-            if (special_tokens is None or 'pad' in special_tokens) and self.pad_token_ix is not None:
+            if special_tokens is None or 'pad' in special_tokens:
                 for _ in range(max_length - len(tokens)):
                     out.append(self.pad_token_ix)
             return out
@@ -66,7 +62,8 @@ class Tokenizer:
     __call__ = encode
     
     @classmethod
-    def from_data(cls, data: str | Iterable[str], special_tokens: set[str] = ()) -> Tokenizer:
+    def from_data(cls, data: str | Iterable[str]) -> Tokenizer:
         data = data if isinstance(data, str) else ''.join(data)
-        tokens = set(re.findall(PATTERN, data)) | special_tokens
+        tokens = set(re.findall(PATTERN, data))
+        tokens.update(('<BOS>', '<EOS>', '<PAD>'))
         return cls(sorted(tokens))
