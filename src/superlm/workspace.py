@@ -166,6 +166,9 @@ class WorkSpace:
                 self.adam_config,
             ):
                 if k in config.keys():
+                    if config is self.model_config:
+                        self.model = None
+                        self.del_checkpoint()
                     config[k] = v
                     break
 
@@ -178,11 +181,11 @@ class WorkSpace:
         ):
             config.check()
     
-    def train(self, prompt: str = '', length: int | None = None, steps: Sequence[int] | None = None) -> None:
+    def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> None:
         self.check()
         self.save()
         self.model.train()
-        trained = self.trainer.train(prompt, length, steps)
+        trained = self.trainer.train(length, steps)
         self.model.load_state_dict(trained)
         self.model.eval()
         self.save()
@@ -245,13 +248,18 @@ class WorkSpace:
             self.tokenizer = Tokenizer(json.loads(open(self.paths['vocab'], encoding='utf-8').read()))
             self.model_config = ModelConfig(**json.loads(open(self.paths['config'], encoding='utf-8').read()))
             self.generation_config = GenerationConfig(**json.loads(open(self.paths['generation_config'], encoding='utf-8').read()))
-            self.model.load_state_dict(torch.load(self.paths['model']))
+            try:
+                self.model.load_state_dict(torch.load(self.paths['model']))
+            except RuntimeError:
+                self.setup_model()
         except FileNotFoundError:
             pass
 
     def info(self) -> None:
-        print(f'Transformer 参数量：{sum(p.numel() for p in self.model.parameters())/1e6:.2f}M')
-        print(f'数据有 {self.trainer.dataset.length} 个 token，{self.tokenizer.vocab_size} 个不同')
+        print(f'----')
+        print(f'模型大小：{sum(p.numel() for p in self.model.parameters())/1e6:.2f}M')
+        print(f'数据大小：{self.trainer.dataset.length}')
+        print(f'词表大小：{self.tokenizer.vocab_size}')
 
     def del_checkpoint(self) -> None:
         if os.path.exists(self.paths['checkpoint']):

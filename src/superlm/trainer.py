@@ -37,7 +37,6 @@ class Trainer:
         self.smooth_loss = math.log(self.tokenizer.vocab_size)
         self.best_loss = 100.0
         self.epochs = training_config.epochs
-        self.block_size = training_config.block_size
         self.batch_size = training_config.batch_size
         self.accumulation_steps = training_config.accumulation_steps
         self.num_steps = 0
@@ -50,7 +49,7 @@ class Trainer:
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
         self.optimizer.zero_grad()
 
-        self.dataset = TextDataset(self.tokenizer, data, self.block_size)
+        self.dataset = TextDataset(self.tokenizer, data, self.model.config.block_size)
         self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_size=self.batch_size,
@@ -59,7 +58,7 @@ class Trainer:
             drop_last=True,
         )
         self.dataloader_iter = iter(self.dataloader)
-        self.num_steps = (self.dataset.length * self.epochs) // (self.block_size * self.batch_size)
+        self.num_steps = (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
     
     def train_step(self) -> int:
         self.step += 1
@@ -80,7 +79,7 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, prompt: str = '', length: int | None = None, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+    def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         if os.path.exists(self.checkpoint_path):
             self.restart()
         if steps is None:
@@ -91,11 +90,14 @@ class Trainer:
             if step % steps[0] == 0:
                 self.log()
             if step % steps[1] == 0:
-                self.sample(prompt, length)
+                self.sample(length)
             if step % steps[2] == 0:
                 self.checkpoint()
             if step >= self.num_steps:
                 break
+        self.log()
+        self.sample(length)
+        self.checkpoint()
         return self.model.state_dict()
 
     def log(self) -> None:
@@ -103,11 +105,11 @@ class Trainer:
         print('----')
         print(f'iter [{self.step}/{self.num_steps}] | loss: {self.smooth_loss:.6f} | time: {time.time() - self.start_time:.6f}s')
 
-    def sample(self, prompt: str = '', length: int | None = None) -> None:
+    def sample(self, length: int | None = None) -> None:
         sample_ix = self.model.generate(
             inputs=self.tokenizer(
-                contents=[prompt],
-                special_tokens=(('bos',) if self.tokenizer.bos_token_ix >= 0 else ()),
+                contents=('',),
+                special_tokens=('bos',),
                 device=self.device,
             ),
             max_new_tokens=length if length else self.block_size,
@@ -124,11 +126,11 @@ class Trainer:
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict(),
-            'step': self.step,
-            'smooth_loss': self.smooth_loss,
-            'losses': self.losses,
             'torch_random_state': torch.get_rng_state(),
             'cuda_random_state': torch.cuda.get_rng_state(),
+            'step': self.step,
+            'loss': self.smooth_loss,
+            'losses': self.losses,
         }
         torch.save(checkpoint, self.checkpoint_path)
 
@@ -137,12 +139,12 @@ class Trainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        self.step = checkpoint['step']
-        self.smooth_loss = checkpoint['smooth_loss']
-        self.best_loss = self.smooth_loss
-        self.losses = checkpoint['losses']
         torch.set_rng_state(checkpoint['torch_random_state'])
         torch.cuda.set_rng_state(checkpoint['cuda_random_state'])
+        self.step = checkpoint['step']
+        self.smooth_loss = checkpoint['loss']
+        self.best_loss = checkpoint['loss']
+        self.losses = checkpoint['losses']
     
     def _lr_lambda(self, step: int) -> float:
         if not self.num_steps:

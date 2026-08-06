@@ -7,7 +7,7 @@ from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
 from ..generation import GenerationModule
 
-__all__ = ['Transformer'] 
+__all__ = ['Transformer']
 
 class RotaryEmbedding(nn.Module):
     def __init__(self, config: ModelConfig) -> None:

@@ -4,12 +4,16 @@ from ..config import ModelConfig, GenerationConfig
 from ..generation import GenerationModule
 
 from .transformer import Transformer
+from .bigram import Bigram
+from .bow import BoW
 
 __all__ = ['Model']
 
 class Model:
     models = {
         'transformer': Transformer,
+        'bigram': Bigram,
+        'bow': BoW,
     }
     
     def __new__(cls, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> GenerationModule:

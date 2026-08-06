@@ -22,7 +22,7 @@ class Tokenizer:
         self.eos_token_ix = self.token_to_ix['<EOS>']
         self.pad_token_ix = self.token_to_ix['<PAD>']
 
-    def encode(self, contents: Iterable[str], *, special_tokens: Container[str] | None = None, device: DeviceLikeType) -> Tensor:
+    def encode(self, contents: Iterable[str], *, special_tokens: Container[str], device: DeviceLikeType) -> Tensor:
         tokens_list = []
         tokens_length = []
         for content in contents:
@@ -33,16 +33,16 @@ class Tokenizer:
 
         def _encode(tokens: list[str]) -> list[int]:
             out = []
-            if special_tokens is None or 'bos' in special_tokens:
+            if 'bos' in special_tokens:
                 out.append(self.bos_token_ix)
             for token in tokens:
                 if token in self.token_to_ix:
                     out.append(self.token_to_ix[token])
                 else:
                     raise TokenNotFoundError(token, text=''.join(tokens))
-            if special_tokens is None or 'eos' in special_tokens:
+            if 'eos' in special_tokens:
                 out.append(self.eos_token_ix)
-            if special_tokens is None or 'pad' in special_tokens:
+            if 'pad' in special_tokens:
                 for _ in range(max_length - len(tokens)):
                     out.append(self.pad_token_ix)
             return out
