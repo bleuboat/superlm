@@ -166,7 +166,7 @@ class WorkSpace:
                 self.adam_config,
             ):
                 if k in config.keys():
-                    if config is self.model_config:
+                    if config is self.model_config and config[k] != v:
                         self.model = None
                         self.del_checkpoint()
                     config[k] = v
