@@ -1,12 +1,11 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.init as init
 from torch import Tensor
-from .tokenizer import Tokenizer
-from .config import ModelConfig, GenerationConfig
-from .generation import GenerationModule
+from .utils import SwiGLU
+from ..tokenizer import Tokenizer
+from ..config import ModelConfig, GenerationConfig
+from ..generation import GenerationModule
 
 __all__ = ['Transformer'] 
 
@@ -38,16 +37,6 @@ def apply_rotary_pos_emb(q: Tensor, k: Tensor, cos: Tensor, sin: Tensor) -> tupl
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
-
-class SwiGLU(nn.Module):
-    def __init__(self, config: ModelConfig) -> None:
-        super().__init__()
-        self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
-        self.up   = nn.Linear(config.n_embd, config.n_inner, bias=False)
-        self.down = nn.Linear(config.n_inner, config.n_embd, bias=False)
-
-    def forward(self, x: Tensor) -> Tensor:
-        return self.down(F.silu(self.gate(x)) * self.up(x))
 
 class CausalSelfAttention(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
@@ -81,7 +70,7 @@ class Block(nn.Module):
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
         self.attn = CausalSelfAttention(config)
         self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.ffnf = SwiGLU(config)
+        self.ffnf = SwiGLU(config.n_embd, config.n_inner, config.n_embd)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         x = x + self.attn(self.ln_1(x), pos_emb)

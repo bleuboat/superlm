@@ -101,6 +101,7 @@ class Config(dict[str, Parameter]):
 
 class ModelConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
+        self.model_type = kwargs.parameter('model_type')
         self.vocab_size = kwargs.parameter('vocab_size')
         self.n_layer = kwargs.parameter('n_layer', 4)
         self.n_embd = kwargs.parameter('n_embd', 256)

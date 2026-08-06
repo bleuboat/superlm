@@ -12,8 +12,9 @@ from typing import Any, Iterable, Sequence
 from .config import *
 from .tokenizer import Tokenizer
 from .streamer import Streamer
-from .model import Transformer
+from .models import Model
 from .trainer import Trainer
+from .generation import GenerationModule
 
 try:
     import matplotlib.pyplot as plt # type: ignore
@@ -40,7 +41,7 @@ class WorkSpace:
     inputs: dict[str, str]
     tokenizer: Tokenizer
     streamer: Streamer
-    model: Transformer
+    model: GenerationModule
     trainer: Trainer
     special_tokens: set[str]
     model_config: ModelConfig
@@ -107,7 +108,7 @@ class WorkSpace:
         return self._streamer
 
     @property
-    def model(self) -> Transformer:
+    def model(self) -> GenerationModule:
         if self._model is None:
             self.setup_model()
         return self._model
@@ -127,7 +128,7 @@ class WorkSpace:
         self._streamer = value
 
     @model.setter
-    def model(self, value: Transformer) -> None:
+    def model(self, value: GenerationModule) -> None:
         self._model = value
 
     @trainer.setter
@@ -230,7 +231,7 @@ class WorkSpace:
         self.streamer = Streamer(self.tokenizer)
 
     def setup_model(self) -> None:
-        self.model = Transformer(self.tokenizer, self.model_config, self.generation_config)
+        self.model = Model(self.tokenizer, self.model_config, self.generation_config)
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
