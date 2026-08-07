@@ -4,7 +4,7 @@ T = TypeVar('T', bound='Config')
 __all__ = ['ModelConfig', 'GenerationConfig', 'TrainingConfig', 'AdamConfig']
 
 class Parameter:
-    __slots__ = 'value', 'default'
+    __slots__ = ('value', 'default')
 
     def __init__(self, value: Any, default: Any = None) -> None:
         self.value = value
@@ -30,12 +30,12 @@ class Parameter:
         return f'Parameter({self.get()})'
 
 class Kwargs:
-    __slots__ = 'kwargs'
+    __slots__ = ('kwargs',)
 
     def __init__(self, kwargs: dict[str, Any]) -> None:
         self.kwargs = kwargs.copy()
 
-    def parameter(self, name: str, default: Any = None) -> Parameter:
+    def parameter(self, name: str, default: Any = None) -> Any:
         return Parameter(self.kwargs.pop(name, None), default)
 
 class Config(dict[str, Parameter]):
@@ -108,6 +108,7 @@ class ModelConfig(Config):
         self.n_embd              = kwargs.parameter('n_embd', 256)
         self.n_inner             = kwargs.parameter('n_inner', lambda: self.n_embd * 4)
         self.n_head              = kwargs.parameter('n_head', lambda: self.n_embd // 64)
+        self.n_kv_head           = kwargs.parameter('n_kv_head', lambda: self.n_head)
         self.block_size          = kwargs.parameter('block_size', 1024)
         self.rope_theta          = kwargs.parameter('rope_theta', 10000)
         self.dropout             = kwargs.parameter('dropout', 0.1)

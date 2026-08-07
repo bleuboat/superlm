@@ -38,30 +38,42 @@ def apply_rotary_pos_emb(q: Tensor, k: Tensor, cos: Tensor, sin: Tensor) -> tupl
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
 
+def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
+    if n_rep == 1:
+        return hidden_states
+    n_batch, n_kv_head, n_ctx, n_head_dim = hidden_states.shape
+    hidden_states = hidden_states[:, :, None, :, :].expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
+    return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
+
 class CausalSelfAttention(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.c_attn = nn.Linear(config.n_embd, config.n_embd * 3, bias=True)
-        self.c_proj = nn.Linear(config.n_embd, config.n_embd, bias=False)
-        self.n_head = config.n_head
         self.n_embd = config.n_embd
+        self.n_head = config.n_head
+        self.n_head_dim = config.n_embd // config.n_head
+        self.n_kv_head = config.n_kv_head
+        self.n_kv_group = config.n_head // config.n_kv_head
         self.dropout = config.dropout
+        self.q_attn = nn.Linear(self.n_embd, self.n_head    * self.n_head_dim, bias=True)
+        self.k_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
+        self.v_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
+        self.o_proj = nn.Linear(self.n_head * self.n_head_dim, self.n_embd, bias=False)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         B, T, C = x.size()
 
-        q, k, v = self.c_attn(x).split(self.n_embd, dim=2)
-        k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        q = self.q_attn(x).view(B, T, self.n_head,    self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
+        k = self.k_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
+        v = self.v_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
         
         cos, sin = pos_emb
         q, k = apply_rotary_pos_emb(q, k, cos, sin)
+        k, v = repeat_kv(k, self.n_kv_group), repeat_kv(v, self.n_kv_group)
 
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout if self.training else 0) # (B, nh, T, hs)
         y = y.transpose(1, 2).contiguous().view(B, T, C)
 
-        y = self.c_proj(y)
+        y = self.o_proj(y)
         return y
 
 class Block(nn.Module):
