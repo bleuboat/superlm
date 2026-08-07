@@ -114,6 +114,10 @@ class ModelConfig(Config):
         self.eps                 = kwargs.parameter('eps', 1e-8)
         self.tie_word_embeddings = kwargs.parameter('tie_word_embeddings', False)
 
+        self.pad_token_ix        = kwargs.parameter('pad_token_ix', None)
+        self.bos_token_ix        = kwargs.parameter('bos_token_ix', None)
+        self.eos_token_ix        = kwargs.parameter('eos_token_ix', None)
+
 class GenerationConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
         self.max_length          = kwargs.parameter('max_length', 512)

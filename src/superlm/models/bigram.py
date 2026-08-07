@@ -10,7 +10,7 @@ class Bigram(GenerationModule):
     def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
         super().__init__(tokenizer, config, generation_config)
         n = self.config.vocab_size
-        self.logits = nn.Embedding(n, n)
+        self.logits = nn.Embedding(n, n, config.pad_token_ix)
 
     def forward(self, idx: Tensor) -> Tensor:
         return self.logits(idx)

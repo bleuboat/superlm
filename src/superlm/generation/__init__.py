@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from torch._prims_common import DeviceLikeType
 from typing import Generator
 from .logits_process import (
     LogitsProcessorList,
@@ -31,6 +30,9 @@ class GenerationModule(nn.Module):
         self.generation_config = generation_config.copy()
         
         self.config.vocab_size = tokenizer.vocab_size
+        self.config.bos_token_ix = tokenizer.bos_token_ix
+        self.config.eos_token_ix = tokenizer.eos_token_ix
+        self.config.pad_token_ix = tokenizer.pad_token_ix
         self.generation_config.bos_token_ix = tokenizer.bos_token_ix
         self.generation_config.eos_token_ix = tokenizer.eos_token_ix
         self.generation_config.pad_token_ix = tokenizer.pad_token_ix

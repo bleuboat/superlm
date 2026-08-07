@@ -81,7 +81,7 @@ class Transformer(GenerationModule):
     def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
         super().__init__(tokenizer, config, generation_config)
         config = self.config
-        self.wte = nn.Embedding(config.vocab_size, config.n_embd)
+        self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
         self.wpe = RotaryEmbedding(config)
         self.h = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
