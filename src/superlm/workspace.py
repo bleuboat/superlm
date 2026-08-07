@@ -76,6 +76,8 @@ class WorkSpace:
 
         if dtype is not None:
             torch.set_default_dtype(dtype)
+        else:
+            torch.set_default_dtype(torch.bfloat16)
 
         if device is not None:
             self.device = torch.device(device)
