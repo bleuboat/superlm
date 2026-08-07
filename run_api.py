@@ -2,10 +2,14 @@ from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from superlm import WorkSpace
 from ast import literal_eval
+from functools import lru_cache
 
 app = Flask(__name__)
 CORS(app)
-workspaces = {}
+
+@lru_cache(maxsize=3)
+def get_workspace(name: str) -> WorkSpace:
+    return WorkSpace(name)
 
 def sse(x):
     with app.app_context():
@@ -13,10 +17,7 @@ def sse(x):
 
 @app.route('/api/<name>', methods=['GET', 'POST'])
 def api(name: str) -> Response:
-    workspace = workspaces.get(name, None)
-    if workspace is None:
-        workspace = WorkSpace(name)
-        workspaces[name] = workspace
+    workspace = get_workspace(name)
     if request.method == 'GET':
         args = dict(request.args)
     else:
