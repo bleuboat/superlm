@@ -7,7 +7,7 @@ import torch
 import dotenv
 
 from torch._prims_common import DeviceLikeType
-from typing import Any, Generator, Iterable, Sequence
+from typing import Any, Callable, Generator, Iterable, Sequence
 
 from .config import *
 from .tokenizer import Tokenizer
@@ -209,11 +209,15 @@ class WorkSpace:
         res = self.model.generate(inputs_tensor, streamer=streamer, **kwargs)
         return self.tokenizer.decode(res)[0]
 
-    def api(self, inputs: str, **kwargs) -> Generator[str]:
+    def api(self, inputs: str, map: Callable[[str], str] | None = None, **kwargs) -> Generator[str]:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=('bos',))
         for token in self.model.api(inputs_tensor, **kwargs):
-            yield self.tokenizer.decode(token)[0]
+            out = self.tokenizer.decode(token)[0]
+            if map is None:
+                yield out
+            else:
+                yield map(out)
 
     def get_inputs(self) -> None:
         try:
