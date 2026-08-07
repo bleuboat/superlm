@@ -5,6 +5,7 @@ import ast
 import json
 import torch
 import dotenv
+import shutil
 
 from torch._prims_common import DeviceLikeType
 from typing import Any, Callable, Generator, Iterable, Sequence
@@ -37,6 +38,7 @@ class WorkSpace:
     name: str
     path: str
     paths: dict[str, str]
+    dtype: torch.dtype
     device: torch.device
     inputs: dict[str, str]
     tokenizer: Tokenizer
@@ -48,7 +50,14 @@ class WorkSpace:
     training_config: TrainingConfig
     adam_config: AdamConfig
 
-    def __init__(self, name: str, *, seed: int | None = None, device: DeviceLikeType | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        seed: int | None = None,
+        dtype: torch.dtype | None = None,
+        device: DeviceLikeType | None = None,
+    ) -> None:
         self.name = name
         self.path = f'{WORKSPACE_PATH}/{name}'
         self.paths = {
@@ -64,6 +73,9 @@ class WorkSpace:
 
         if seed is not None:
             torch.manual_seed(seed)
+
+        if dtype is not None:
+            torch.set_default_dtype(dtype)
 
         if device is not None:
             self.device = torch.device(device)
@@ -136,6 +148,9 @@ class WorkSpace:
     def set_seed(self, seed: int) -> None:
         torch.manual_seed(seed)
 
+    def set_dtype(self, dtype: torch.dtype) -> None:
+        torch.set_default_dtype(dtype)
+
     def set_device(self, device: DeviceLikeType) -> None:
         self.device = torch.device(device)
         if self._model is not None:
@@ -144,10 +159,7 @@ class WorkSpace:
     def copy(self, other: WorkSpace | str) -> WorkSpace:
         if isinstance(other, str):
             other = WorkSpace(other)
-        files = os.listdir(other.path)
-        for file in files:
-            with open(f'{self.path}/{file}', 'w', encoding='utf-8') as f:
-                f.write(open(f'{other.path}/{file}', 'r', encoding='utf-8').read())
+        shutil.copytree(other.path, self.path, dirs_exist_ok=True)
         self.load()
         return self
 

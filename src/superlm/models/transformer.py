@@ -17,13 +17,13 @@ class RotaryEmbedding(nn.Module):
         self.register_buffer("inv_freq", inv_freq, persistent=False)
 
     @torch.no_grad()
-    def forward(self, position_ids: Tensor) -> tuple[Tensor, Tensor]:
-        inv_freq_expanded = self.inv_freq[None, :, None].to(position_ids.device).expand(position_ids.shape[0], -1, 1)
+    def forward(self, x: Tensor, position_ids: Tensor) -> tuple[Tensor, Tensor]:
+        inv_freq_expanded = self.inv_freq[None, :, None].float().to(position_ids.device).expand(position_ids.shape[0], -1, 1)
         position_ids_expanded = position_ids[:, None, :].float()
         freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
         emb = torch.cat((freqs, freqs), dim=-1)
-        cos = emb.cos()
-        sin = emb.sin()
+        cos = emb.cos().to(x.dtype)
+        sin = emb.sin().to(x.dtype)
         return cos, sin
     
 def rotate_half(x):
@@ -94,9 +94,9 @@ class Transformer(GenerationModule):
         return F.linear(input, self.wte.weight)
 
     def forward(self, idx: Tensor) -> Tensor:
-        pos = torch.arange(0, idx.size()[1], dtype=torch.long, device=idx.device).unsqueeze(0)
+        pos = torch.arange(0, idx.size()[1], device=idx.device).unsqueeze(0)
         tok_emb = self.wte(idx)
-        pos_emb = self.wpe(pos)
+        pos_emb = self.wpe(idx, pos)
         x = tok_emb
         for block in self.h:
             x = block(x, pos_emb)
