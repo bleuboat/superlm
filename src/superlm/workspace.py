@@ -1,28 +1,24 @@
-from __future__ import annotations
-
 import os
-import ast
 import json
 import torch
 import dotenv
 import shutil
 
 from torch._prims_common import DeviceLikeType
-from typing import Any, Callable, Generator, Iterable, Sequence
+from typing import Callable, Generator, Sequence
 
 from .config import *
 from .tokenizer import Tokenizer
 from .streamer import Streamer
 from .models import Model
 from .trainer import Trainer
-from .generation import GenerationModule
 
 try:
     import matplotlib.pyplot as plt # type: ignore
 except ModuleNotFoundError:
     plt = None
 
-__all__ = ['WorkSpace', 'command']
+__all__ = ['WorkSpace']
 
 def get_workspace_path() -> str:
     dotenv.load_dotenv()
@@ -43,7 +39,7 @@ class WorkSpace:
     inputs: dict[str, str]
     tokenizer: Tokenizer
     streamer: Streamer
-    model: GenerationModule
+    model: Model
     trainer: Trainer
     model_config: ModelConfig
     generation_config: GenerationConfig
@@ -120,7 +116,7 @@ class WorkSpace:
         return self._streamer
 
     @property
-    def model(self) -> GenerationModule:
+    def model(self) -> Model:
         if self._model is None:
             self.setup_model()
         return self._model
@@ -140,7 +136,7 @@ class WorkSpace:
         self._streamer = value
 
     @model.setter
-    def model(self, value: GenerationModule | None) -> None:
+    def model(self, value: Model | None) -> None:
         self._model = value
 
     @trainer.setter
@@ -203,15 +199,7 @@ class WorkSpace:
         self.model.load_state_dict(trained)
         self.model.eval()
         self.save()
-
-        if plt is not None:
-            x, y = zip(*self.trainer.losses)
-            plt.plot(x, y)
-            plt.xlabel('num_steps')
-            plt.ylabel('loss')
-            plt.grid(True)
-            plt.savefig(self.paths['loss'], dpi=300)
-            plt.show()
+        self.show_losses(self.trainer.losses)
 
     def generate(self, inputs: str, *, stream: bool = False, **kwargs) -> str:
         self.check()
@@ -289,59 +277,15 @@ class WorkSpace:
         if os.path.exists(self.paths['checkpoint']):
             os.remove(self.paths['checkpoint'])
 
+    def show_losses(self, losses: list[tuple[int, int]]) -> None:
+        if plt is not None:
+            x, y = zip(*losses)
+            plt.plot(x, y)
+            plt.xlabel('num_steps')
+            plt.ylabel('loss')
+            plt.grid(True)
+            plt.savefig(self.paths['loss'], dpi=300)
+            plt.show()
+
     def __repr__(self) -> str:
         return f'WorkSpace({self.name})'
-
-def command() -> None:
-    workspace = None
-    while True:
-        command = input('>>> ').lower().split()
-        if not command:
-            continue
-
-        try:
-            args, kwargs = _get_args(command[1:])
-
-            match command[0]:
-                case 'set' | 'config' | 'info' | 'train' | 'eval' | 'inference' | 'generate' if not workspace:
-                    print('Error: Workspace not set')
-
-                case 'ws' | 'work' | 'space' | 'workspace':
-                    workspace = WorkSpace(*args, **kwargs)
-
-                case 'set' | 'config':
-                    workspace.config(*args, **kwargs)
-
-                case 'info':
-                    workspace.info(*args, **kwargs)
-
-                case 'train':
-                    workspace.train(*args, **kwargs)
-
-                case 'eval' | 'inference' | 'generate':
-                    kwargs['stream'] = True
-                    workspace.generate(*args, **kwargs)
-
-                case 'q' | 'quit' | 'exit':
-                    if workspace:
-                        del workspace
-                    break
-
-        except Exception as e:
-            print(f'{type(e).__name__}: {e}')
-            continue
-
-def _get_args(params: Iterable[str]) -> tuple[list[Any], dict[str, Any]]:
-    args = []
-    kwargs = {}
-    for arg in params:
-        if '=' not in arg:
-            args.append(arg)
-        else:
-            kwarg = arg.split('=')
-            kwargs[kwarg[0]] = kwarg[1]
-    for i in range(len(args)):
-        args[i] = ast.literal_eval(args[i])
-    for key in kwargs:
-        kwargs[key] = ast.literal_eval(kwargs[key])
-    return args, kwargs

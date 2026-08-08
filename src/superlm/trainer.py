@@ -13,7 +13,7 @@ from typing import Iterable, Sequence
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
 from .dataset import TextDataset
-from .generation import GenerationModule
+from .models import Model
 
 __all__ = ['Trainer']
 
@@ -21,7 +21,7 @@ class Trainer:
     def __init__(
         self,
         tokenizer: Tokenizer,
-        model: GenerationModule,
+        model: Model,
         device: torch.device,
         checkpoint_path: str,
         data: Iterable[str],
@@ -69,8 +69,7 @@ class Trainer:
             inputs, targets = next(self.dataloader_iter)
         inputs  = inputs .to(self.device, non_blocking=True)
         targets = targets.to(self.device, non_blocking=True)
-        outputs = self.model(inputs)
-        loss = self.criterion(outputs.view(-1, self.model.config.vocab_size), targets.view(-1))
+        outputs, loss = self.model(inputs, labels=targets)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
         if self.step % self.accumulation_steps == 0:

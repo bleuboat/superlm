@@ -1,7 +1,7 @@
 from superlm import WorkSpace, dtype
 space = WorkSpace('backrooms2', seed=42, dtype=dtype.bfloat16)
 space.del_checkpoint()
-space.config(model_type='transformer', hidden_act='relu')
+space.config(model_type='CausalLM')
 space.config(epochs=1, batch_size=2, accumulation_steps=1)
 space.info()
 space.train(length=200)

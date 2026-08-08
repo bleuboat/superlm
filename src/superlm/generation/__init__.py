@@ -16,27 +16,13 @@ from .stopping_criteria import (
     MaxTimeCriteria,
     EosTokenCriteria
 )
-from ..tokenizer import Tokenizer
+from ..models import Model
 from ..streamer import Streamer
-from ..config import ModelConfig, GenerationConfig
+from ..config import GenerationConfig
 
-__all__ = ['GenerationModule']
+__all__ = ['GenerationModel']
 
-class GenerationModule(nn.Module):
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
-        super().__init__()
-
-        self.config = config.copy()
-        self.generation_config = generation_config.copy()
-
-        self.config.vocab_size = tokenizer.vocab_size
-        self.config.bos_token_ix = tokenizer.bos_token_ix
-        self.config.eos_token_ix = tokenizer.eos_token_ix
-        self.config.pad_token_ix = tokenizer.pad_token_ix
-        self.generation_config.bos_token_ix = tokenizer.bos_token_ix
-        self.generation_config.eos_token_ix = tokenizer.eos_token_ix
-        self.generation_config.pad_token_ix = tokenizer.pad_token_ix
-
+class GenerationModel(Model):
     def _get_generation_config(self, inputs: Tensor, **kwargs) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
@@ -78,7 +64,7 @@ class GenerationModule(nn.Module):
         do_sample = generation_config.do_sample
         unfinished = True
         while unfinished:
-            outputs = self(inputs)
+            outputs, loss = self(inputs)
             logits = outputs[:, -1, :]
             score = processors(inputs, logits)
             if do_sample:

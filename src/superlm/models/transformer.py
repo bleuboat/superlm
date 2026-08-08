@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from torch.nn import Module
+from .utils import Model
 from ..activations import ACTIVATIONS
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
-from ..generation import GenerationModule
+from ..generation import GenerationModel
 
-__all__ = ['Transformer']
-
-class RotaryEmbedding(nn.Module):
+class SuperLM_RotaryEmbedding(Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         head_dim = config.n_embd // config.n_head
@@ -45,7 +45,7 @@ def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
     hidden_states = hidden_states[:, :, None, :, :].expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
     return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
 
-class CausalSelfAttention(nn.Module):
+class SuperLM_Attention(Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.n_embd = config.n_embd
@@ -76,7 +76,7 @@ class CausalSelfAttention(nn.Module):
         y = self.o_proj(y)
         return y
 
-class MLP(nn.Module):
+class SuperLM_MLP(Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
@@ -87,42 +87,75 @@ class MLP(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self.down(self.act(self.gate(x)) * self.up(x))
 
-class Block(nn.Module):
+class SuperLM_Layer(Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.attn = CausalSelfAttention(config)
+        self.attn = SuperLM_Attention(config)
         self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.ffnf = MLP(config)
+        self.ffnf = SuperLM_MLP(config)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         x = x + self.attn(self.ln_1(x), pos_emb)
         x = x + self.ffnf(self.ln_2(x))
         return x
 
-class Transformer(GenerationModule):
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
-        super().__init__(tokenizer, config, generation_config)
-        config = self.config
+class SuperLM_Model(Module):
+    def __init__(self, config: ModelConfig) -> None:
+        super().__init__()
         self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
-        self.wpe = RotaryEmbedding(config)
-        self.h = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
+        self.wpe = SuperLM_RotaryEmbedding(config)
+        self.h = nn.ModuleList([SuperLM_Layer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
-        if not self.config.tie_word_embeddings:
-            self._lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
-    def lm_head(self, input: Tensor) -> Tensor:
-        if not self.config.tie_word_embeddings:
-            return self._lm_head(input)
-        return F.linear(input, self.wte.weight)
 
     def forward(self, idx: Tensor) -> Tensor:
         pos = torch.arange(0, idx.size()[1], device=idx.device).unsqueeze(0)
         tok_emb = self.wte(idx)
         pos_emb = self.wpe(idx, pos)
         x = tok_emb
-        for block in self.h:
-            x = block(x, pos_emb)
+        for SuperLM_Layer in self.h:
+            x = SuperLM_Layer(x, pos_emb)
         x = self.ln_f(x)
-        x = self.lm_head(x)
         return x
+
+@Model.register_model('CausalLM')
+class SuperLM_ForCausalLM(GenerationModel):
+    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
+        super().__init__(tokenizer, config, generation_config)
+        self.model = SuperLM_Model(self.config)
+        if not self.config.tie_word_embeddings:
+            self._lm_head = nn.Linear(self.config.n_embd, self.config.vocab_size, bias=False)
+        self.loss_function = nn.CrossEntropyLoss()
+
+    def lm_head(self, input: Tensor) -> Tensor:
+        if not self.config.tie_word_embeddings:
+            return self._lm_head(input)
+        return F.linear(input, self.model.wte.weight)
+
+    def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
+        x = self.model(input_ids)
+        x = self.lm_head(x)
+        loss = None
+        if labels is not None:
+            loss = self.loss_function(x.view(-1, self.config.vocab_size), labels.view(-1))
+        return x, loss
+
+@Model.register_model('SequenceClassification')
+class SuperLM_ForSequenceClassification(Model):
+    pass
+
+@Model.register_model('QuestionAnswering')
+class SuperLM_ForQuestionAnswering(Model):
+    pass
+
+@Model.register_model('TokenClassification')
+class SuperLM_ForTokenClassification(Model):
+    pass
+
+__all__ = [
+    'SuperLM_Model',
+    'SuperLM_ForCausalLM',
+    'SuperLM_ForSequenceClassification',
+    'SuperLM_ForQuestionAnswering',
+    'SuperLM_ForTokenClassification',
+]
