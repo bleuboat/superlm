@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from .utils import SwiGLU
+from ..activations import ACTIVATIONS
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
 from ..generation import GenerationModule
@@ -24,13 +24,24 @@ class CausalBoW(nn.Module):
         y = att @ x
         return self.dropout(y)
 
+class MLP(nn.Module):
+    def __init__(self, config: ModelConfig) -> None:
+        super().__init__()
+        self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
+        self.up   = nn.Linear(config.n_embd, config.n_inner, bias=False)
+        self.down = nn.Linear(config.n_inner, config.n_embd, bias=False)
+        self.act  = ACTIVATIONS[config.hidden_act]
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.down(self.act(self.gate(x)) * self.up(x))
+
 class Block(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
         self.cbow = CausalBoW(config)
         self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.ffnf = SwiGLU(config.n_embd, config.n_inner, config.n_embd)
+        self.ffnf = MLP(config)
 
     def forward(self, x: Tensor) -> Tensor:
         x = x + self.cbow(self.ln_1(x))

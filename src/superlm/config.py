@@ -1,3 +1,4 @@
+from .activations import ACTIVATIONS
 from typing import Any, TypeVar, Iterator
 T = TypeVar('T', bound='Config')
 
@@ -99,6 +100,7 @@ class ModelConfig(Config):
     def check(self) -> None:
         if self.model_type == 'transformer':
             assert self.n_embd % self.n_head == 0
+        assert self.hidden_act in ACTIVATIONS
 
     def init(self, kwargs: Kwargs) -> None:
         self.model_type          = kwargs.parameter('model_type')
@@ -113,6 +115,7 @@ class ModelConfig(Config):
         self.rope_theta          = kwargs.parameter('rope_theta', 10000)
         self.dropout             = kwargs.parameter('dropout', 0.1)
         self.eps                 = kwargs.parameter('eps', 1e-8)
+        self.hidden_act          = kwargs.parameter('hidden_act', 'silu')
         self.tie_word_embeddings = kwargs.parameter('tie_word_embeddings', False)
 
         self.pad_token_ix        = kwargs.parameter('pad_token_ix', None)

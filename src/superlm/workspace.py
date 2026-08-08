@@ -132,19 +132,19 @@ class WorkSpace:
         return self._trainer
 
     @tokenizer.setter
-    def tokenizer(self, value: Tokenizer) -> None:
+    def tokenizer(self, value: Tokenizer | None) -> None:
         self._tokenizer = value
 
     @streamer.setter
-    def streamer(self, value: Streamer) -> None:
+    def streamer(self, value: Streamer | None) -> None:
         self._streamer = value
 
     @model.setter
-    def model(self, value: GenerationModule) -> None:
+    def model(self, value: GenerationModule | None) -> None:
         self._model = value
 
     @trainer.setter
-    def trainer(self, value: Trainer) -> None:
+    def trainer(self, value: Trainer | None) -> None:
         self._trainer = value
 
     def set_seed(self, seed: int) -> None:
