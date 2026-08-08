@@ -3,6 +3,7 @@ import json
 import torch
 import dotenv
 import shutil
+import safetensors.torch
 
 from torch._prims_common import DeviceLikeType
 from typing import Callable, Generator, Sequence
@@ -63,7 +64,7 @@ class WorkSpace:
                        'config': f'{self.path}/config.json',
             'generation_config': f'{self.path}/generation_config.json',
                          'loss': f'{self.path}/loss.png',
-                        'model': f'{self.path}/model.pth',
+                        'model': f'{self.path}/model.safetensors',
                         'vocab': f'{self.path}/vocab.json',
         }
 
@@ -253,7 +254,7 @@ class WorkSpace:
             json.dump(self.model.config.to_dict(), f, indent=2)
         with open(self.paths['generation_config'], 'w', encoding='utf-8') as f:
             json.dump(self.model.generation_config.to_dict(), f, indent=2)
-        torch.save(self.model.state_dict(), self.paths['model'])
+        safetensors.torch.save_model(self.model, self.paths['model'])
 
     def load(self) -> None:
         try:
@@ -261,7 +262,7 @@ class WorkSpace:
             self.model_config = ModelConfig(**json.loads(open(self.paths['config'], encoding='utf-8').read()))
             self.generation_config = GenerationConfig(**json.loads(open(self.paths['generation_config'], encoding='utf-8').read()))
             try:
-                self.model.load_state_dict(torch.load(self.paths['model']))
+                safetensors.torch.load_model(self.model, self.paths['model'])
             except RuntimeError:
                 self.setup_model()
         except FileNotFoundError:
