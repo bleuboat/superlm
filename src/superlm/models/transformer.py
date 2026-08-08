@@ -25,7 +25,7 @@ class RotaryEmbedding(nn.Module):
         cos = emb.cos().to(x.dtype)
         sin = emb.sin().to(x.dtype)
         return cos, sin
-    
+
 def rotate_half(x):
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
@@ -65,7 +65,7 @@ class CausalSelfAttention(nn.Module):
         q = self.q_attn(x).view(B, T, self.n_head,    self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
         k = self.k_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
         v = self.v_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2) # (B, nh, T, hs)
-        
+
         cos, sin = pos_emb
         q, k = apply_rotary_pos_emb(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_kv_group), repeat_kv(v, self.n_kv_group)

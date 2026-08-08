@@ -15,7 +15,7 @@ class Model:
         'bow': BoW,
         'bigram': Bigram,
     }
-    
+
     def __new__(cls, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> GenerationModule:
         model_class = cls.models.get(config.model_type, None)
         if model_class is None:

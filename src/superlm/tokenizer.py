@@ -46,9 +46,9 @@ class Tokenizer:
                 for _ in range(max_length - len(tokens)):
                     out.append(self.pad_token_ix)
             return out
-        
+
         return torch.tensor([_encode(tokens) for tokens in tokens_list], dtype=torch.long, device=torch.device(device))
-    
+
     def decode(self, contents: Tensor | Iterable[Tensor]) -> list[str]:
         def _decode(content: Tensor) -> str:
             out = []
@@ -58,9 +58,9 @@ class Tokenizer:
                     out.append(self.tokens[ix])
             return ''.join(out)
         return [_decode(content) for content in contents]
-    
+
     __call__ = encode
-    
+
     @classmethod
     def from_data(cls, data: str | Iterable[str]) -> Tokenizer:
         data = data if isinstance(data, str) else ''.join(data)

@@ -28,7 +28,7 @@ class GenerationModule(nn.Module):
 
         self.config = config.copy()
         self.generation_config = generation_config.copy()
-        
+
         self.config.vocab_size = tokenizer.vocab_size
         self.config.bos_token_ix = tokenizer.bos_token_ix
         self.config.eos_token_ix = tokenizer.eos_token_ix

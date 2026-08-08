@@ -59,7 +59,7 @@ class Trainer:
         )
         self.dataloader_iter = iter(self.dataloader)
         self.num_steps = (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
-    
+
     def train_step(self) -> int:
         self.step += 1
         try:
@@ -117,7 +117,7 @@ class Trainer:
         txt = self.tokenizer.decode(sample_ix)[0]
         print('----')
         print(txt)
-        
+
     def checkpoint(self) -> None:
         if self.smooth_loss >= self.best_loss:
             return
@@ -145,7 +145,7 @@ class Trainer:
         self.smooth_loss = checkpoint['loss']
         self.best_loss = checkpoint['loss']
         self.losses = checkpoint['losses']
-    
+
     def _lr_lambda(self, step: int) -> float:
         if not self.num_steps:
             return 0.0

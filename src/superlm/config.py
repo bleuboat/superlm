@@ -54,7 +54,7 @@ class Config(dict[str, Parameter]):
             super().__setitem__(key, value)
         else:
             super().__setitem__(key, Parameter(value))
-    
+
     def __getitem__(self, key: str) -> Any:
         return super().__getitem__(key).get()
 

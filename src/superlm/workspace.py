@@ -94,7 +94,7 @@ class WorkSpace:
         self._streamer = None
         self._model = None
         self._trainer = None
-        
+
         try:
             os.listdir(self.path)
             self.load()
@@ -194,7 +194,7 @@ class WorkSpace:
             self.adam_config,
         ):
             config.check()
-    
+
     def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> None:
         self.check()
         self.save()
