@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from typing import Callable, TypeVar
 from ..tokenizer import Tokenizer
@@ -41,5 +42,17 @@ class Model(nn.Module):
             cls._model_classes[name] = model_class
             return model_class
         return decorator
+
+    @property
+    def num_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
+    @property
+    def device(self) -> torch.device:
+        return next(p.device for p in self.parameters())
+
+    @property
+    def dtype(self) -> torch.dtype:
+        return next(p.dtype for p in self.parameters() if p.is_floating_point())
 
 T = TypeVar('T', bound=type[Model])

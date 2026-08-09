@@ -270,7 +270,7 @@ class WorkSpace:
 
     def info(self) -> None:
         print(f'----')
-        print(f'模型大小：{sum(p.numel() for p in self.model.parameters())/1e6:.2f}M')
+        print(f'模型大小：{self.model.num_parameters/1e6:.2f}M')
         print(f'数据大小：{self.trainer.dataset.length}')
         print(f'词表大小：{self.tokenizer.vocab_size}')
 

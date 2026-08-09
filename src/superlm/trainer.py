@@ -69,7 +69,7 @@ class Trainer:
             inputs, targets = next(self.dataloader_iter)
         inputs  = inputs .to(self.device, non_blocking=True)
         targets = targets.to(self.device, non_blocking=True)
-        outputs, loss = self.model(inputs, labels=targets)
+        outputs, loss = self.model(inputs, targets)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
         if self.step % self.accumulation_steps == 0:
