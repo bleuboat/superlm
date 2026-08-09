@@ -103,8 +103,8 @@ class ModelConfig(Config):
         assert self.hidden_act in ACTIVATIONS
 
     def init(self, kwargs: Kwargs) -> None:
-        self.model_type         : str                 = kwargs.parameter('model_type')
-        self.vocab_size         : int                 = kwargs.parameter('vocab_size')
+        self.model_type         : str                 = kwargs.parameter('model_type',)
+        self.vocab_size         : int                 = kwargs.parameter('vocab_size',)
 
         self.n_layer            : int                 = kwargs.parameter('n_layer', 4)
         self.n_embd             : int                 = kwargs.parameter('n_embd', 256)
@@ -150,3 +150,9 @@ class AdamConfig(Config):
         self.betas              : tuple[float, float] = kwargs.parameter('betas', (0.9, 0.999))
         self.eps                : float               = kwargs.parameter('eps', 1e-8)
         self.weight_decay       : float               = kwargs.parameter('weight_decay', 0.01)
+        self.amsgrad            : bool                = kwargs.parameter('amsgrad', False)
+        self.maximize           : bool                = kwargs.parameter('maximize', False)
+        self.foreach            : bool | None         = kwargs.parameter('foreach', None)
+        self.capturable         : bool                = kwargs.parameter('capturable', False)
+        self.differentiable     : bool                = kwargs.parameter('differentiable', False)
+        self.fused              : bool | None         = kwargs.parameter('fused', None)
