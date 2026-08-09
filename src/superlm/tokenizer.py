@@ -7,11 +7,15 @@ from typing import Container, Iterable
 
 __all__ = ['TokenNotFoundError', 'Tokenizer']
 
-PATTERN = r'[A-Za-z]+|[^A-Za-z]'
+PATTERN = re.compile(r"(?i:'s|'t|'re|'ve|'m|'ll|'d)| ?[A-Za-z]+|[\r\n]+|\s+|.")
 
 class TokenNotFoundError(LookupError):
     def __init__(self, token: str, *, text: str) -> None:
-        super().__init__(f'Unknown token "{token}" (at text "{text}")')
+        if len(text) > 30:
+            message = f'Unknown token "{token}" (at text "{text[:10]}...{text[-10:]}")'
+        else:
+            message = f'Unknown token "{token}" (at text "{text}")'
+        super().__init__(message)
 
 class Tokenizer:
     def __init__(self, tokens: list[str]) -> None:
@@ -26,7 +30,7 @@ class Tokenizer:
         tokens_list = []
         tokens_length = []
         for content in contents:
-            tokens = re.findall(PATTERN, content)
+            tokens = PATTERN.findall(content)
             tokens_list.append(tokens)
             tokens_length.append(len(tokens))
         max_length = max(tokens_length)
@@ -63,7 +67,7 @@ class Tokenizer:
 
     @classmethod
     def from_data(cls, data: str | Iterable[str]) -> Tokenizer:
-        data = data if isinstance(data, str) else ''.join(data)
-        tokens = set(re.findall(PATTERN, data))
+        data = data if isinstance(data, str) else '\n'.join(data)
+        tokens = set(PATTERN.findall(data))
         tokens.update(('<BOS>', '<EOS>', '<PAD>'))
         return cls(sorted(tokens))

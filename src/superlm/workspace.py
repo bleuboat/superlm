@@ -178,7 +178,10 @@ class WorkSpace:
             ):
                 if k in config.keys():
                     if config is self.model_config and config[k] != v:
+                        self.tokenizer = None
+                        self.streamer = None
                         self.model = None
+                        self.trainer = None
                         self.del_checkpoint()
                     config[k] = v
                     break
