@@ -25,9 +25,9 @@ def get_workspace_path() -> str:
     dotenv.load_dotenv()
     path = os.getenv('WORKSPACE_PATH')
     if path is None:
+        path = 'workspace'
         dotenv.set_key('.env', 'WORKSPACE_PATH', 'workspace')
-        return get_workspace_path()
-    return os.getenv('WORKSPACE_PATH')
+    return path
 
 WORKSPACE_PATH = get_workspace_path()
 
