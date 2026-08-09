@@ -8,11 +8,11 @@ import safetensors.torch
 from torch._prims_common import DeviceLikeType
 from typing import Callable, Generator, Sequence
 
-from .config import *
-from .models import *
-from .tokenizer import Tokenizer
-from .streamer import Streamer
-from .trainer import Trainer
+from .config    import *
+from .models    import *
+from .tokenizer import *
+from .streamer  import *
+from .trainer   import *
 
 try:
     import matplotlib.pyplot as plt # type: ignore
@@ -245,7 +245,7 @@ class WorkSpace:
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
-        self.trainer = Trainer(self.tokenizer, self.model, self.device, self.paths['checkpoint'], self.inputs.values(), self.training_config, self.adam_config)
+        self.trainer = Trainer(self.tokenizer, self.model, self.paths['checkpoint'], self.inputs.values(), self.training_config, self.adam_config)
 
     def save(self) -> None:
         with open(self.paths['vocab'], 'w', encoding='utf-8') as f:
@@ -279,6 +279,7 @@ class WorkSpace:
             os.remove(self.paths['checkpoint'])
 
     def show_losses(self, losses: list[tuple[int, int]]) -> None:
+        print('----')
         if plt is not None:
             x, y = zip(*losses)
             plt.plot(x, y)

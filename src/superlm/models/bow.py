@@ -3,9 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from ..activations import ACTIVATIONS
-from ..tokenizer import Tokenizer
-from ..config import ModelConfig, GenerationConfig
-from ..generation import GenerationModule
+from ..config import ModelConfig
 
 __all__ = ['BoW']
 
@@ -48,21 +46,13 @@ class Block(nn.Module):
         x = x + self.ffnf(self.ln_2(x))
         return x
 
-class BoW(GenerationModule):
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
-        super().__init__(tokenizer, config, generation_config)
-        config = self.config
+class BoW(nn.Module):
+    def __init__(self, config: ModelConfig) -> None:
+        super().__init__()
         self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
         self.wpe = nn.Embedding(config.block_size, config.n_embd)
         self.h = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
-        if not self.config.tie_word_embeddings:
-            self._lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
-    def lm_head(self, input: Tensor) -> Tensor:
-        if not self.config.tie_word_embeddings:
-            return self._lm_head(input)
-        return F.linear(input, self.wte.weight)
 
     def forward(self, idx: Tensor) -> Tensor:
         pos = torch.arange(0, idx.size()[1], dtype=torch.long, device=idx.device).unsqueeze(0)
@@ -72,5 +62,4 @@ class BoW(GenerationModule):
         for block in self.h:
             x = block(x)
         x = self.ln_f(x)
-        x = self.lm_head(x)
         return x

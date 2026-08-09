@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from typing import Callable
 from ..generation import GenerationMixin
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
@@ -29,6 +30,8 @@ def register_model(*model_classes: type[nn.Module]) -> None:
         MODEL_CLASSES[model_class.__module__.split('.')[-1]] = model_class
 
 class Model(nn.Module):
+    __call__: Callable[[Tensor, Tensor | None], tuple[Tensor, Tensor | None]]
+
     @property
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())

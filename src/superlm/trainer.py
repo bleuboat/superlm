@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from typing import Iterable, Sequence
+from typing import cast, Iterable, Sequence
 
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
@@ -22,7 +22,6 @@ class Trainer:
         self,
         tokenizer: Tokenizer,
         model: Model,
-        device: torch.device,
         checkpoint_path: str,
         data: Iterable[str],
         training_config: TrainingConfig,
@@ -31,7 +30,6 @@ class Trainer:
         super().__init__()
         self.tokenizer = tokenizer
         self.model = model
-        self.device = device
         self.checkpoint_path = checkpoint_path
 
         self.smooth_loss = math.log(self.tokenizer.vocab_size)
@@ -50,12 +48,15 @@ class Trainer:
         self.optimizer.zero_grad()
 
         self.dataset = TextDataset(self.tokenizer, data, self.model.config.block_size)
-        self.dataloader = DataLoader(
-            dataset=self.dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            pin_memory=True,
-            drop_last=True,
+        self.dataloader = cast(
+            Iterable[tuple[torch.Tensor, torch.Tensor]],
+            DataLoader(
+                dataset=self.dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+                pin_memory=True,
+                drop_last=True,
+            ),
         )
         self.dataloader_iter = iter(self.dataloader)
         self.num_steps = (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
@@ -67,8 +68,8 @@ class Trainer:
         except StopIteration:
             self.dataloader_iter = iter(self.dataloader)
             inputs, targets = next(self.dataloader_iter)
-        inputs  = inputs .to(self.device, non_blocking=True)
-        targets = targets.to(self.device, non_blocking=True)
+        inputs  = inputs .to(self.model.device, non_blocking=True)
+        targets = targets.to(self.model.device, non_blocking=True)
         outputs, loss = self.model(inputs, targets)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
@@ -109,7 +110,7 @@ class Trainer:
             inputs=self.tokenizer(
                 contents=('',),
                 special_tokens=('bos',),
-                device=self.device,
+                device=self.model.device,
             ),
             max_new_tokens=length if length else self.block_size,
         )

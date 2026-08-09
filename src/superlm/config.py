@@ -103,50 +103,50 @@ class ModelConfig(Config):
         assert self.hidden_act in ACTIVATIONS
 
     def init(self, kwargs: Kwargs) -> None:
-        self.model_type          = kwargs.parameter('model_type')
-        self.vocab_size          = kwargs.parameter('vocab_size')
+        self.model_type         : str                 = kwargs.parameter('model_type')
+        self.vocab_size         : int                 = kwargs.parameter('vocab_size')
 
-        self.n_layer             = kwargs.parameter('n_layer', 4)
-        self.n_embd              = kwargs.parameter('n_embd', 256)
-        self.n_inner             = kwargs.parameter('n_inner', lambda: self.n_embd * 4)
-        self.n_head              = kwargs.parameter('n_head', lambda: self.n_embd // 64)
-        self.n_kv_head           = kwargs.parameter('n_kv_head', lambda: self.n_head)
-        self.block_size          = kwargs.parameter('block_size', 1024)
-        self.rope_theta          = kwargs.parameter('rope_theta', 10000)
-        self.dropout             = kwargs.parameter('dropout', 0.1)
-        self.eps                 = kwargs.parameter('eps', 1e-8)
-        self.hidden_act          = kwargs.parameter('hidden_act', 'silu')
-        self.tie_word_embeddings = kwargs.parameter('tie_word_embeddings', False)
+        self.n_layer            : int                 = kwargs.parameter('n_layer', 4)
+        self.n_embd             : int                 = kwargs.parameter('n_embd', 256)
+        self.n_inner            : int                 = kwargs.parameter('n_inner', lambda: self.n_embd * 4)
+        self.n_head             : int                 = kwargs.parameter('n_head', lambda: self.n_embd // 64)
+        self.n_kv_head          : int                 = kwargs.parameter('n_kv_head', lambda: self.n_head)
+        self.block_size         : int                 = kwargs.parameter('block_size', 1024)
+        self.rope_theta         : int                 = kwargs.parameter('rope_theta', 10000)
+        self.dropout            : float               = kwargs.parameter('dropout', 0.1)
+        self.eps                : float               = kwargs.parameter('eps', 1e-8)
+        self.hidden_act         : str                 = kwargs.parameter('hidden_act', 'silu')
+        self.tie_word_embeddings: bool                = kwargs.parameter('tie_word_embeddings', False)
 
-        self.pad_token_ix        = kwargs.parameter('pad_token_ix', None)
-        self.bos_token_ix        = kwargs.parameter('bos_token_ix', None)
-        self.eos_token_ix        = kwargs.parameter('eos_token_ix', None)
+        self.pad_token_ix       : int | None          = kwargs.parameter('pad_token_ix', None)
+        self.bos_token_ix       : int | None          = kwargs.parameter('bos_token_ix', None)
+        self.eos_token_ix       : int | None          = kwargs.parameter('eos_token_ix', None)
 
 class GenerationConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
-        self.max_length          = kwargs.parameter('max_length', 512)
-        self.max_new_tokens      = kwargs.parameter('max_new_tokens', None)
-        self.max_time            = kwargs.parameter('max_time', None)
+        self.max_length         : int | None          = kwargs.parameter('max_length', 512)
+        self.max_new_tokens     : int | None          = kwargs.parameter('max_new_tokens', None)
+        self.max_time           : int | float         = kwargs.parameter('max_time', None)
 
-        self.do_sample           = kwargs.parameter('do_sample', True)
-        self.temperature         = kwargs.parameter('temperature', 1.0)
-        self.top_k               = kwargs.parameter('top_k', 50)
-        self.top_p               = kwargs.parameter('top_p', 1.0)
-        self.repetition_penalty  = kwargs.parameter('repetition_penalty', 1.0)
+        self.do_sample          : bool                = kwargs.parameter('do_sample', True)
+        self.temperature        : float               = kwargs.parameter('temperature', 1.0)
+        self.top_k              : int                 = kwargs.parameter('top_k', 50)
+        self.top_p              : float               = kwargs.parameter('top_p', 1.0)
+        self.repetition_penalty : float               = kwargs.parameter('repetition_penalty', 1.0)
 
-        self.pad_token_ix        = kwargs.parameter('pad_token_ix', None)
-        self.bos_token_ix        = kwargs.parameter('bos_token_ix', None)
-        self.eos_token_ix        = kwargs.parameter('eos_token_ix', None)
+        self.pad_token_ix       : int | None          = kwargs.parameter('pad_token_ix', None)
+        self.bos_token_ix       : int | None          = kwargs.parameter('bos_token_ix', None)
+        self.eos_token_ix       : int | None          = kwargs.parameter('eos_token_ix', None)
 
 class TrainingConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
-        self.epochs              = kwargs.parameter('epochs', 1)
-        self.batch_size          = kwargs.parameter('batch_size', 1)
-        self.accumulation_steps  = kwargs.parameter('accumulation_steps', 1)
+        self.epochs             : int                 = kwargs.parameter('epochs', 1)
+        self.batch_size         : int                 = kwargs.parameter('batch_size', 1)
+        self.accumulation_steps : int                 = kwargs.parameter('accumulation_steps', 1)
 
 class AdamConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
-        self.lr                  = kwargs.parameter('lr', 1e-3)
-        self.betas               = kwargs.parameter('betas', (0.9, 0.999))
-        self.eps                 = kwargs.parameter('eps', 1e-8)
-        self.weight_decay        = kwargs.parameter('weight_decay', 0.01)
+        self.lr                 : float               = kwargs.parameter('lr', 1e-3)
+        self.betas              : tuple[float, float] = kwargs.parameter('betas', (0.9, 0.999))
+        self.eps                : float               = kwargs.parameter('eps', 1e-8)
+        self.weight_decay       : float               = kwargs.parameter('weight_decay', 0.01)
