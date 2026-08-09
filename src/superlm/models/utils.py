@@ -1,48 +1,34 @@
 import torch
 import torch.nn as nn
-from typing import Callable, TypeVar
+import torch.nn.functional as F
+from torch import Tensor
+from ..generation import GenerationMixin
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
 
-__all__ = ['Model']
+__all__ = [
+    'auto_model',
+    'register_model',
+    'Model',
+    'CausalLM',
+    'SequenceClassification',
+    'QuestionAnswering',
+    'TokenClassification',
+]
+
+MODEL_CLASSES: dict[str, type[nn.Module]] = {}
+
+def auto_model(config: ModelConfig) -> nn.Module:
+    model_class = MODEL_CLASSES.get(config.model_type, None)
+    if model_class is None:
+        raise RuntimeError('Model type not defined')
+    return model_class(config)
+
+def register_model(*model_classes: type[nn.Module]) -> None:
+    for model_class in model_classes:
+        MODEL_CLASSES[model_class.__module__.split('.')[-1]] = model_class
 
 class Model(nn.Module):
-    '''
-    Base class for all neural network models.
-
-    All models should subclass this class.
-    '''
-    _model_classes: dict[str, type[Model]] = {}
-
-    def __new__(cls, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> Model:
-        if cls is not Model:
-            return super().__new__(cls)
-        model_class = cls._model_classes.get(config.model_type, None)
-        if model_class is None:
-            raise RuntimeError('Model type not defined')
-        return model_class(tokenizer, config, generation_config)
-
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
-        super().__init__()
-
-        self.config = config.copy()
-        self.generation_config = generation_config.copy()
-
-        self.config.vocab_size = tokenizer.vocab_size
-        self.config.bos_token_ix = tokenizer.bos_token_ix
-        self.config.eos_token_ix = tokenizer.eos_token_ix
-        self.config.pad_token_ix = tokenizer.pad_token_ix
-        self.generation_config.bos_token_ix = tokenizer.bos_token_ix
-        self.generation_config.eos_token_ix = tokenizer.eos_token_ix
-        self.generation_config.pad_token_ix = tokenizer.pad_token_ix
-
-    @classmethod
-    def register_model(cls, name: str) -> Callable[[T], T]:
-        def decorator(model_class: T) -> T:
-            cls._model_classes[name] = model_class
-            return model_class
-        return decorator
-
     @property
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())
@@ -55,4 +41,33 @@ class Model(nn.Module):
     def dtype(self) -> torch.dtype:
         return next(p.dtype for p in self.parameters() if p.is_floating_point())
 
-T = TypeVar('T', bound=type[Model])
+class CausalLM(Model, GenerationMixin):
+    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
+        super().__init__(tokenizer, config, generation_config)
+        self.model = auto_model(self.config)
+        if not self.config.tie_word_embeddings:
+            self._lm_head = nn.Linear(self.config.n_embd, self.config.vocab_size, bias=False)
+        self.loss_function = nn.CrossEntropyLoss()
+
+    def lm_head(self, input: Tensor) -> Tensor:
+        if not self.config.tie_word_embeddings:
+            return self._lm_head(input)
+        return F.linear(input, self.model.wte.weight)
+
+    def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
+        x = self.model(input_ids)
+        x = self.lm_head(x)
+        loss = None
+        if labels is not None:
+            loss = self.loss_function(x.view(-1, self.config.vocab_size), labels.view(-1))
+        return x, loss
+
+# TODO: Unsupported models
+class SequenceClassification(Model):
+    pass
+
+class QuestionAnswering(Model):
+    pass
+
+class TokenClassification(Model):
+    pass

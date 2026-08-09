@@ -9,9 +9,9 @@ from torch._prims_common import DeviceLikeType
 from typing import Callable, Generator, Sequence
 
 from .config import *
+from .models import *
 from .tokenizer import Tokenizer
 from .streamer import Streamer
-from .models import Model
 from .trainer import Trainer
 
 try:
@@ -241,7 +241,7 @@ class WorkSpace:
         self.streamer = Streamer(self.tokenizer)
 
     def setup_model(self) -> None:
-        self.model = Model(self.tokenizer, self.model_config, self.generation_config)
+        self.model = CausalLM(self.tokenizer, self.model_config, self.generation_config)
         self.model.to(self.device)
 
     def setup_trainer(self) -> None:
