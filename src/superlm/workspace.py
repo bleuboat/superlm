@@ -94,7 +94,6 @@ class WorkSpace:
 
         try:
             os.listdir(self.path)
-            self.load()
         except FileNotFoundError:
             os.makedirs(self.path)
 
@@ -170,19 +169,8 @@ class WorkSpace:
 
     def config(self, **configs) -> None:
         for k, v in configs.items():
-            for config in (
-                self.model_config,
-                self.generation_config,
-                self.training_config,
-                self.adam_config,
-            ):
+            for config in (self.model_config, self.generation_config, self.training_config, self.adam_config):
                 if k in config.keys():
-                    if config is self.model_config and config[k] != v:
-                        self.tokenizer = None
-                        self.streamer = None
-                        self.model = None
-                        self.trainer = None
-                        self.del_checkpoint()
                     config[k] = v
                     break
 
@@ -276,10 +264,6 @@ class WorkSpace:
         print(f'模型大小：{self.model.num_parameters/1e6:.2f}M')
         print(f'数据大小：{self.trainer.dataset.length}')
         print(f'词表大小：{self.tokenizer.vocab_size}')
-
-    def del_checkpoint(self) -> None:
-        if os.path.exists(self.paths['checkpoint']):
-            os.remove(self.paths['checkpoint'])
 
     def show_losses(self, losses: list[tuple[int, int]]) -> None:
         print('----')

@@ -69,7 +69,7 @@ class Config(dict[str, Parameter]):
         return super().__iter__()
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({', '.join(f'{k}={self[k]}' for k in self)})'
+        return f'{self.__class__.__name__}(\n  {',\n  '.join(f'{k}={self[k]}' for k in self)},\n)'
 
     def init(self, kwargs: Kwargs) -> None:
         return

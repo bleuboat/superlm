@@ -97,7 +97,7 @@ class Trainer:
                 break
         self.log()
         self.sample(length)
-        self.checkpoint()
+        os.remove(self.checkpoint_path)
         return self.model.state_dict()
 
     def log(self) -> None:
@@ -112,7 +112,7 @@ class Trainer:
                 special_tokens=('bos',),
                 device=self.model.device,
             ),
-            max_new_tokens=length if length else self.block_size,
+            max_new_tokens=length if length else self.model.block_size,
         )
         txt = self.tokenizer.decode(sample_ix)[0]
         print('----')
