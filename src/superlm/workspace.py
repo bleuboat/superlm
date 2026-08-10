@@ -37,11 +37,6 @@ class WorkSpace:
     paths: dict[str, str]
     dtype: torch.dtype
     device: torch.device
-    inputs: dict[str, str]
-    tokenizer: Tokenizer
-    streamer: Streamer
-    model: Model
-    trainer: Trainer
     model_config: ModelConfig
     generation_config: GenerationConfig
     training_config: TrainingConfig
@@ -101,31 +96,31 @@ class WorkSpace:
     def inputs(self) -> dict[str, str]:
         if self._inputs is None:
             self.get_inputs()
-        return self._inputs
+        return self._inputs # type: ignore
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self._tokenizer is None:
             self.setup_tokenizer()
-        return self._tokenizer
+        return self._tokenizer # type: ignore
 
     @property
     def streamer(self) -> Streamer:
         if self._streamer is None:
             self.setup_streamer()
-        return self._streamer
+        return self._streamer # type: ignore
 
     @property
-    def model(self) -> Model:
+    def model(self) -> CausalLM:
         if self._model is None:
             self.setup_model()
-        return self._model
+        return self._model # type: ignore
 
     @property
     def trainer(self) -> Trainer:
         if self._trainer is None:
             self.setup_trainer()
-        return self._trainer
+        return self._trainer # type: ignore
 
     @tokenizer.setter
     def tokenizer(self, value: Tokenizer | None) -> None:
@@ -136,7 +131,7 @@ class WorkSpace:
         self._streamer = value
 
     @model.setter
-    def model(self, value: Model | None) -> None:
+    def model(self, value: CausalLM | None) -> None:
         self._model = value
 
     @trainer.setter

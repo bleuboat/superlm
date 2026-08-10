@@ -59,7 +59,8 @@ class GenerationMixin(nn.Module):
 
     def _get_criteria(self, generation_config: GenerationConfig) -> StoppingCriteriaList:
         criteria = StoppingCriteriaList()
-        criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
+        if generation_config.eos_token_ix is not None:
+            criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
         if generation_config.max_length is not None:
             criteria.append(MaxLengthCriteria(max_length=generation_config.max_length))
         if generation_config.max_time is not None:

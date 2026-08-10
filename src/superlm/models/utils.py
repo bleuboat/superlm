@@ -9,7 +9,7 @@ from ..config import ModelConfig, GenerationConfig
 
 __all__ = [
     'auto_model',
-    'register_model',
+    'register_models',
     'Model',
     'CausalLM',
     'SequenceClassification',
@@ -25,7 +25,7 @@ def auto_model(config: ModelConfig) -> nn.Module:
         raise RuntimeError('Model type not defined')
     return model_class(config)
 
-def register_model(*model_classes: type[nn.Module]) -> None:
+def register_models(*model_classes: type[nn.Module]) -> None:
     for model_class in model_classes:
         MODEL_CLASSES[model_class.__module__.split('.')[-1]] = model_class
 
@@ -55,7 +55,7 @@ class CausalLM(Model, GenerationMixin):
     def lm_head(self, input: Tensor) -> Tensor:
         if not self.config.tie_word_embeddings:
             return self._lm_head(input)
-        return F.linear(input, self.model.wte.weight)
+        return F.linear(input, self.model.wte.weight) # type: ignore
 
     def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
         x = self.model(input_ids)

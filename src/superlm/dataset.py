@@ -16,7 +16,7 @@ class TextDataset(Dataset):
             pads = torch.nonzero(self.dataset[i] == tokenizer.pad_token_ix)
             length = pads[0].item() if pads.shape[0] else len(self.dataset[i])
             self.length += length
-            for j in range(max(length - block_size, 1)):
+            for j in range(max(length - block_size, 1)): # type: ignore
                 self.indexes.append((i, j))
 
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:

@@ -59,7 +59,7 @@ class Tokenizer:
             for token in content:
                 ix = token.item()
                 if ix not in (self.bos_token_ix, self.eos_token_ix, self.pad_token_ix):
-                    out.append(self.tokens[ix])
+                    out.append(self.tokens[ix]) # type: ignore
             return ''.join(out)
         return [_decode(content) for content in contents]
 

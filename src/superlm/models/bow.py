@@ -8,6 +8,8 @@ from ..config import ModelConfig
 __all__ = ['BoW']
 
 class CausalBoW(nn.Module):
+    bias: Tensor
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         n = config.block_size

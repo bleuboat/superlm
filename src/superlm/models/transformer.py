@@ -8,6 +8,8 @@ from ..config import ModelConfig
 __all__ = ['SuperLM_Model']
 
 class SuperLM_RotaryEmbedding(nn.Module):
+    inv_freq: Tensor
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         head_dim = config.n_embd // config.n_head
