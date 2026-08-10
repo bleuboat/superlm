@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Any, Callable, cast, overload
+from typing import Any, cast, overload
 from ..generation import GenerationMixin
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
