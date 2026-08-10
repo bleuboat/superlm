@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Callable
+from typing import Any, Callable, cast, overload
 from ..generation import GenerationMixin
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
@@ -30,7 +30,16 @@ def register_models(*model_classes: type[nn.Module]) -> None:
         MODEL_CLASSES[model_class.__module__.split('.')[-1]] = model_class
 
 class Model(nn.Module):
-    __call__: Callable[[Tensor, Tensor | None], tuple[Tensor, Tensor | None]]
+    @overload
+    def __call__(self, input_ids: Tensor) -> tuple[Tensor, None]:
+        ...
+
+    @overload
+    def __call__(self, input_ids: Tensor, labels: Tensor) -> tuple[Tensor, Tensor]:
+        ...
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self._wrapped_call_impl(*args, **kwargs)
 
     @property
     def num_parameters(self) -> int:
@@ -55,7 +64,8 @@ class CausalLM(Model, GenerationMixin):
     def lm_head(self, input: Tensor) -> Tensor:
         if not self.config.tie_word_embeddings:
             return self._lm_head(input)
-        return F.linear(input, self.model.wte.weight) # type: ignore
+        embedding = cast(nn.Embedding, self.model.wte)
+        return F.linear(input, embedding.weight)
 
     def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
         x = self.model(input_ids)

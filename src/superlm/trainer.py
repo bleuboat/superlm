@@ -13,7 +13,7 @@ from typing import cast, Iterable, Sequence
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
 from .dataset import TextDataset
-from .models import Model
+from .models import CausalLM
 
 __all__ = ['Trainer']
 
@@ -21,7 +21,7 @@ class Trainer:
     def __init__(
         self,
         tokenizer: Tokenizer,
-        model: Model,
+        model: CausalLM,
         checkpoint_path: str,
         data: Iterable[str],
         training_config: TrainingConfig,
@@ -39,7 +39,7 @@ class Trainer:
         self.accumulation_steps = training_config.accumulation_steps
         self.num_steps = 0
         self.step = 0
-        self.start_time = None
+        self.start_time = 0
         self.losses = []
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100)

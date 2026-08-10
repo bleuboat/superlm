@@ -6,7 +6,7 @@ import shutil
 import safetensors.torch
 
 from torch._prims_common import DeviceLikeType
-from typing import Callable, Generator, Sequence
+from typing import Callable, cast, Generator, Sequence
 
 from .config    import *
 from .models    import *
@@ -96,31 +96,31 @@ class WorkSpace:
     def inputs(self) -> dict[str, str]:
         if self._inputs is None:
             self.get_inputs()
-        return self._inputs # type: ignore
+        return cast(dict[str, str], self._inputs)
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self._tokenizer is None:
             self.setup_tokenizer()
-        return self._tokenizer # type: ignore
+        return cast(Tokenizer, self._tokenizer)
 
     @property
     def streamer(self) -> Streamer:
         if self._streamer is None:
             self.setup_streamer()
-        return self._streamer # type: ignore
+        return cast(Streamer, self._streamer)
 
     @property
     def model(self) -> CausalLM:
         if self._model is None:
             self.setup_model()
-        return self._model # type: ignore
+        return cast(CausalLM, self._model)
 
     @property
     def trainer(self) -> Trainer:
         if self._trainer is None:
             self.setup_trainer()
-        return self._trainer # type: ignore
+        return cast(Trainer, self._trainer)
 
     @tokenizer.setter
     def tokenizer(self, value: Tokenizer | None) -> None:

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from torch import Tensor
-from typing import Iterable
+from typing import cast, Iterable
 from .tokenizer import Tokenizer
 
 __all__ = ['TextDataset']
@@ -14,9 +14,9 @@ class TextDataset(Dataset):
         self.indexes = []
         for i in range(len(self.dataset)):
             pads = torch.nonzero(self.dataset[i] == tokenizer.pad_token_ix)
-            length = pads[0].item() if pads.shape[0] else len(self.dataset[i])
+            length = cast(int, pads[0].item()) if pads.shape[0] else len(self.dataset[i])
             self.length += length
-            for j in range(max(length - block_size, 1)): # type: ignore
+            for j in range(max(length - block_size, 1)):
                 self.indexes.append((i, j))
 
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:

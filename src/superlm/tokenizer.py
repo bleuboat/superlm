@@ -3,7 +3,7 @@ import re
 import torch
 from torch import Tensor
 from torch._prims_common import DeviceLikeType
-from typing import Container, Iterable
+from typing import cast, Container, Iterable
 
 __all__ = ['TokenNotFoundError', 'Tokenizer']
 
@@ -57,9 +57,9 @@ class Tokenizer:
         def _decode(content: Tensor) -> str:
             out = []
             for token in content:
-                ix = token.item()
+                ix = cast(int, token.item())
                 if ix not in (self.bos_token_ix, self.eos_token_ix, self.pad_token_ix):
-                    out.append(self.tokens[ix]) # type: ignore
+                    out.append(self.tokens[ix])
             return ''.join(out)
         return [_decode(content) for content in contents]
 
