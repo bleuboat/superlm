@@ -1,6 +1,5 @@
 from .activations import ACTIVATIONS
 from typing import Any, TypeVar, Iterator
-T = TypeVar('T', bound='Config')
 
 __all__ = ['ModelConfig', 'GenerationConfig', 'TrainingConfig', 'AdamConfig']
 
@@ -156,3 +155,5 @@ class AdamConfig(Config):
         self.capturable         : bool                = kwargs.parameter('capturable', False)
         self.differentiable     : bool                = kwargs.parameter('differentiable', False)
         self.fused              : bool | None         = kwargs.parameter('fused', None)
+
+T = TypeVar('T', bound=Config)
