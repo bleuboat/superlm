@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Generator
+from collections.abc import Generator
 from .logits_process import (
     LogitsProcessorList,
     TemperatureLogitsWarper,
@@ -20,7 +20,9 @@ from ..tokenizer import Tokenizer
 from ..streamer import Streamer
 from ..config import ModelConfig, GenerationConfig
 
-__all__ = ['GenerationMixin']
+
+__all__ = ["GenerationMixin"]
+
 
 class GenerationMixin(nn.Module):
     def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
@@ -79,7 +81,7 @@ class GenerationMixin(nn.Module):
         do_sample = generation_config.do_sample
         unfinished = True
         while unfinished:
-            outputs, loss = self(inputs)
+            outputs, _ = self(inputs)
             logits = outputs[:, -1, :]
             score = processors(inputs, logits)
             if do_sample:

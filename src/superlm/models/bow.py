@@ -5,7 +5,9 @@ from torch import Tensor
 from ..activations import ACTIVATIONS
 from ..config import ModelConfig
 
-__all__ = ['BoW']
+
+__all__ = ["BoW"]
+
 
 class CausalBoW(nn.Module):
     bias: Tensor
@@ -13,16 +15,17 @@ class CausalBoW(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         n = config.block_size
-        self.register_buffer('bias', torch.tril(torch.ones(n, n)).view(1, n, n))
+        self.register_buffer("bias", torch.tril(torch.ones(n, n)).view(1, n, n))
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x: Tensor) -> Tensor:
-        B, T, C = x.size()
+        B, T, _ = x.size()
         att = torch.zeros((B, T, T), device=x.device)
-        att = att.masked_fill(self.bias[:, :T, :T] == 0, float('-inf'))
+        att = att.masked_fill(self.bias[:, :T, :T] == 0, float("-inf"))
         att = F.softmax(att, dim=-1)
         y = att @ x
         return self.dropout(y)
+
 
 class MLP(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
@@ -34,6 +37,7 @@ class MLP(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.down(self.act(self.gate(x)) * self.up(x))
+
 
 class Block(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
@@ -47,6 +51,7 @@ class Block(nn.Module):
         x = x + self.cbow(self.ln_1(x))
         x = x + self.ffnf(self.ln_2(x))
         return x
+
 
 class BoW(nn.Module):
     def __init__(self, config: ModelConfig) -> None:

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 import math
 import time
@@ -8,14 +6,16 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from typing import cast, Iterable, Sequence
+from typing import cast
+from collections.abc import Iterable, Sequence
 
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
 from .dataset import TextDataset
 from .models import CausalLM
 
-__all__ = ['Trainer']
+__all__ = ["Trainer"]
+
 
 class Trainer:
     def __init__(
@@ -42,7 +42,8 @@ class Trainer:
         self.start_time = 0
         self.losses = []
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100)
+        ignore_index = tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100
+        self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)
         self.optimizer = optim.AdamW(model.parameters(), **adam_config)
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
         self.optimizer.zero_grad()
@@ -70,7 +71,7 @@ class Trainer:
             inputs, targets = next(self.dataloader_iter)
         inputs  = inputs .to(self.model.device, non_blocking=True)
         targets = targets.to(self.model.device, non_blocking=True)
-        outputs, loss = self.model(inputs, targets)
+        _, loss = self.model(inputs, targets)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
         if self.step % self.accumulation_steps == 0:
@@ -102,20 +103,21 @@ class Trainer:
 
     def log(self) -> None:
         self.losses.append((self.step, self.smooth_loss))
-        print('----')
-        print(f'iter [{self.step}/{self.num_steps}] | loss: {self.smooth_loss:.6f} | time: {time.time() - self.start_time:.6f}s')
+        time_used = time.time() - self.start_time
+        print("----")
+        print(f"iter [{self.step}/{self.num_steps}] | loss: {self.smooth_loss:.6f} | time: {time_used:.6f}s")
 
     def sample(self, length: int | None = None) -> None:
         sample_ix = self.model.generate(
             inputs=self.tokenizer(
-                contents=('',),
-                special_tokens=('bos',),
+                contents=("",),
+                special_tokens=("bos",),
                 device=self.model.device,
             ),
-            max_new_tokens=length if length else self.model.block_size,
+            max_new_tokens=length or self.model.config.block_size,
         )
         txt = self.tokenizer.decode(sample_ix)[0]
-        print('----')
+        print("----")
         print(txt)
 
     def checkpoint(self) -> None:
@@ -123,28 +125,28 @@ class Trainer:
             return
         self.best_loss = self.smooth_loss
         checkpoint = {
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scheduler_state_dict': self.scheduler.state_dict(),
-            'torch_random_state': torch.get_rng_state(),
-            'cuda_random_state': torch.cuda.get_rng_state(),
-            'step': self.step,
-            'loss': self.smooth_loss,
-            'losses': self.losses,
+            "model_state_dict": self.model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "scheduler_state_dict": self.scheduler.state_dict(),
+            "torch_random_state": torch.get_rng_state(),
+            "cuda_random_state": torch.cuda.get_rng_state(),
+            "step": self.step,
+            "loss": self.smooth_loss,
+            "losses": self.losses,
         }
         torch.save(checkpoint, self.checkpoint_path)
 
     def restart(self) -> None:
         checkpoint = torch.load(self.checkpoint_path, weights_only=False)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        torch.set_rng_state(checkpoint['torch_random_state'])
-        torch.cuda.set_rng_state(checkpoint['cuda_random_state'])
-        self.step = checkpoint['step']
-        self.smooth_loss = checkpoint['loss']
-        self.best_loss = checkpoint['loss']
-        self.losses = checkpoint['losses']
+        self.model.load_state_dict(checkpoint["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        torch.set_rng_state(checkpoint["torch_random_state"])
+        torch.cuda.set_rng_state(checkpoint["cuda_random_state"])
+        self.step = checkpoint["step"]
+        self.smooth_loss = checkpoint["loss"]
+        self.best_loss = checkpoint["loss"]
+        self.losses = checkpoint["losses"]
 
     def _lr_lambda(self, step: int) -> float:
         if not self.num_steps:

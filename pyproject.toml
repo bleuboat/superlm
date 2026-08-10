@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "superlm"
+version = "0.5.0"
+description = "SuperLM Model"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "torch>=2.0.0",
+    "dotenv>=0.9.9",
+    "safetensors>=0.8.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = {find = {where = ["src"]}}
+
+[tool.ruff]
+line-length = 120
+exclude = ["tests/", "run/"]
+
+[tool.ruff.lint]
+select = [
+    "B",     # used
+    "C",
+    "G",
+    "E",     # used
+    "EXE",
+    "F",     # used
+    "SIM",   # used
+    "W",     # used
+    "FURB",  # used
+    "LOG",
+    "NPY",
+    "PERF",
+    "PGH",
+    "PIE",
+    "PLC",
+    "PLE",
+    "PLR",   # used
+    "PLW",
+    "PT",
+    "PYI",
+    "Q",     # used
+    "RSE",
+    "RUF",   # used
+    "S",     # used
+    "SLOT",
+    "TRY",   # used
+    "UP",
+    "YTT",
+]
+ignore = [
+    "F403",
+    "F405",
+    "RUF022",
+    "PLR0402",
+    "PLR0913",
+    "PLR0917",
+    "SIM115",
+    "TRY003",
+]

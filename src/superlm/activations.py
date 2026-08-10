@@ -1,8 +1,8 @@
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Callable
+from collections.abc import Callable
 
-__all__ = ['ACTIVATIONS']
+__all__ = ["ACTIVATIONS"]
 
 ACTIVATIONS: dict[str, Callable[[Tensor], Tensor]] = {
     "relu": F.relu,

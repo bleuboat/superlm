@@ -2,7 +2,9 @@ import torch.nn as nn
 from torch import Tensor
 from ..config import ModelConfig
 
-__all__ = ['Bigram'] 
+
+__all__ = ["Bigram"]
+
 
 class Bigram(nn.Module):
     def __init__(self, config: ModelConfig) -> None:

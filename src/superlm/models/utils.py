@@ -7,27 +7,31 @@ from ..generation import GenerationMixin
 from ..tokenizer import Tokenizer
 from ..config import ModelConfig, GenerationConfig
 
+
 __all__ = [
-    'auto_model',
-    'register_models',
-    'Model',
-    'CausalLM',
-    'SequenceClassification',
-    'QuestionAnswering',
-    'TokenClassification',
+    "auto_model",
+    "register_models",
+    "Model",
+    "CausalLM",
+    "SequenceClassification",
+    "QuestionAnswering",
+    "TokenClassification",
 ]
 
 MODEL_CLASSES: dict[str, type[nn.Module]] = {}
 
+
 def auto_model(config: ModelConfig) -> nn.Module:
-    model_class = MODEL_CLASSES.get(config.model_type, None)
+    model_class = MODEL_CLASSES.get(config.model_type)
     if model_class is None:
-        raise RuntimeError('Model type not defined')
+        raise RuntimeError("model type not defined")
     return model_class(config)
+
 
 def register_models(*model_classes: type[nn.Module]) -> None:
     for model_class in model_classes:
-        MODEL_CLASSES[model_class.__module__.split('.')[-1]] = model_class
+        MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
+
 
 class Model(nn.Module):
     @overload
@@ -53,6 +57,7 @@ class Model(nn.Module):
     def dtype(self) -> torch.dtype:
         return next(p.dtype for p in self.parameters() if p.is_floating_point())
 
+
 class CausalLM(Model, GenerationMixin):
     def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
         super().__init__(tokenizer, config, generation_config)
@@ -75,12 +80,15 @@ class CausalLM(Model, GenerationMixin):
             loss = self.loss_function(x.view(-1, self.config.vocab_size), labels.view(-1))
         return x, loss
 
+
 # TODO: Unsupported models
 class SequenceClassification(Model):
     pass
 
+
 class QuestionAnswering(Model):
     pass
+
 
 class TokenClassification(Model):
     pass

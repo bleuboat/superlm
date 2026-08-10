@@ -5,7 +5,9 @@ from torch import Tensor
 from ..activations import ACTIVATIONS
 from ..config import ModelConfig
 
-__all__ = ['SuperLM_Model']
+
+__all__ = ["SuperLM_Model"]
+
 
 class SuperLM_RotaryEmbedding(nn.Module):
     inv_freq: Tensor
@@ -18,7 +20,7 @@ class SuperLM_RotaryEmbedding(nn.Module):
 
     @torch.no_grad()
     def forward(self, x: Tensor, position_ids: Tensor) -> tuple[Tensor, Tensor]:
-        inv_freq_expanded = self.inv_freq[None, :, None].float().to(position_ids.device).expand(position_ids.shape[0], -1, 1)
+        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
         position_ids_expanded = position_ids[:, None, :].float()
         freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
         emb = torch.cat((freqs, freqs), dim=-1)
@@ -26,10 +28,12 @@ class SuperLM_RotaryEmbedding(nn.Module):
         sin = emb.sin().to(x.dtype)
         return cos, sin
 
+
 def rotate_half(x):
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
+
 
 def apply_rotary_pos_emb(q: Tensor, k: Tensor, cos: Tensor, sin: Tensor) -> tuple[Tensor, Tensor]:
     cos = cos.unsqueeze(1)
@@ -38,12 +42,14 @@ def apply_rotary_pos_emb(q: Tensor, k: Tensor, cos: Tensor, sin: Tensor) -> tupl
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
 
+
 def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
     if n_rep == 1:
         return hidden_states
     n_batch, n_kv_head, n_ctx, n_head_dim = hidden_states.shape
     hidden_states = hidden_states[:, :, None, :, :].expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
     return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
+
 
 class SuperLM_Attention(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
@@ -76,6 +82,7 @@ class SuperLM_Attention(nn.Module):
         y = self.o_proj(y)
         return y
 
+
 class SuperLM_MLP(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
@@ -86,6 +93,7 @@ class SuperLM_MLP(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.down(self.act(self.gate(x)) * self.up(x))
+
 
 class SuperLM_Layer(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
@@ -99,6 +107,7 @@ class SuperLM_Layer(nn.Module):
         x = x + self.attn(self.ln_1(x), pos_emb)
         x = x + self.ffnf(self.ln_2(x))
         return x
+
 
 class SuperLM_Model(nn.Module):
     def __init__(self, config: ModelConfig) -> None:

@@ -1,14 +1,17 @@
 import torch
 from torch.utils.data import Dataset
 from torch import Tensor
-from typing import cast, Iterable
+from typing import cast
+from collections.abc import Iterable
 from .tokenizer import Tokenizer
 
-__all__ = ['TextDataset']
+
+__all__ = ["TextDataset"]
+
 
 class TextDataset(Dataset):
     def __init__(self, tokenizer: Tokenizer, data: Iterable[str], block_size: int) -> None:
-        self.dataset = tokenizer(data, special_tokens=('bos', 'eos', 'pad'), device='cpu')
+        self.dataset = tokenizer(data, special_tokens=("bos", "eos", "pad"), device="cpu")
         self.block_size = block_size
         self.length = 0
         self.indexes = []
