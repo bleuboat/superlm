@@ -272,9 +272,9 @@ class WorkSpace:
 
     def info(self) -> None:
         print("----")
-        print(f"Model parameters: {self.model.num_parameters / 1e6:.2f}M")
-        print(f"Data size: {self.trainer.dataset.length}")
-        print(f"Vocab size: {self.tokenizer.vocab_size}")
+        print(f"model parameters: {self.model.num_parameters / 1e6:.2f}M")
+        print(f"data size: {self.trainer.dataset.length}")
+        print(f"vocab size: {self.tokenizer.vocab_size}")
 
     def show_losses(self, losses: list[tuple[int, int]]) -> None:
         print("----")
