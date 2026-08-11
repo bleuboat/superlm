@@ -1,10 +1,10 @@
-import os
 import math
 import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from pathlib import Path
 
 from typing import cast
 from collections.abc import Iterable, Sequence
@@ -22,7 +22,7 @@ class Trainer:
         self,
         tokenizer: Tokenizer,
         model: CausalLM,
-        checkpoint_path: str,
+        checkpoint_path: Path,
         data: Iterable[str],
         training_config: TrainingConfig,
         adam_config: AdamConfig,
@@ -81,7 +81,7 @@ class Trainer:
         return self.step
 
     def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
-        if os.path.exists(self.checkpoint_path):
+        if self.checkpoint_path.exists():
             self.restart()
         if steps is None:
             steps = (50, 100, 200)
@@ -98,7 +98,7 @@ class Trainer:
                 break
         self.log()
         self.sample(length)
-        os.remove(self.checkpoint_path)
+        self.checkpoint_path.unlink()
         return self.model.state_dict()
 
     def log(self) -> None:

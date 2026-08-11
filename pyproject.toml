@@ -51,6 +51,7 @@ select = [
     "PLE",
     "PLR",
     "PLW",
+    "PTH",
     "PYI",
     "Q",
     "RET",

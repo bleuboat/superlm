@@ -133,10 +133,10 @@ class GenerationConfig(Config):
         self.max_time           : int | float         = kwargs.parameter("max_time", None)
 
         self.do_sample          : bool                = kwargs.parameter("do_sample", True)
-        self.temperature        : float               = kwargs.parameter("temperature", 1)
+        self.temperature        : float               = kwargs.parameter("temperature", 1.0)
         self.top_k              : int                 = kwargs.parameter("top_k", 50)
-        self.top_p              : float               = kwargs.parameter("top_p", 1)
-        self.repetition_penalty : float               = kwargs.parameter("repetition_penalty", 1)
+        self.top_p              : float               = kwargs.parameter("top_p", 1.0)
+        self.repetition_penalty : float               = kwargs.parameter("repetition_penalty", 1.0)
 
         self.pad_token_ix       : int | None          = kwargs.parameter("pad_token_ix", None)
         self.bos_token_ix       : int | None          = kwargs.parameter("bos_token_ix", None)

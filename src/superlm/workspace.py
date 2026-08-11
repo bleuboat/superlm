@@ -2,8 +2,9 @@ import os
 import json
 import torch
 import dotenv
-import shutil
-import safetensors.torch
+from pathlib import Path
+from dataclasses import dataclass
+from safetensors.torch import save_model, load_model
 
 from torch._prims_common import DeviceLikeType
 from typing import Any, cast
@@ -23,17 +24,30 @@ except ModuleNotFoundError:
 
 __all__ = ["WorkSpace"]
 
+
 dotenv.load_dotenv()
-WORKSPACE_PATH = os.getenv("WORKSPACE_PATH")
-if WORKSPACE_PATH is None:
-    WORKSPACE_PATH = "workspace"
+path = os.getenv("WORKSPACE_PATH")
+if path is None:
+    path = "workspace"
     dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
+WORKSPACE_PATH = Path(path)
+
+
+@dataclass
+class Paths:
+    inputs: Path
+    checkpoint: Path
+    config: Path
+    generation_config: Path
+    loss: Path
+    model: Path
+    vocab: Path
 
 
 class WorkSpace:
     name: str
-    path: str
-    paths: dict[str, str]
+    path: Path
+    paths: Paths
     dtype: torch.dtype
     device: torch.device
     model_config: ModelConfig
@@ -49,18 +63,16 @@ class WorkSpace:
         dtype: torch.dtype | None = None,
         device: DeviceLikeType | None = None,
     ) -> None:
-        self.name = name
-        self.path = f"{WORKSPACE_PATH}/{name}"
-        self.paths = {
-                        "input": f"{self.path}/input.txt",
-                       "inputs": f"{self.path}/inputs",
-                   "checkpoint": f"{self.path}/checkpoint.pth",
-                       "config": f"{self.path}/config.json",
-            "generation_config": f"{self.path}/generation_config.json",
-                         "loss": f"{self.path}/loss.png",
-                        "model": f"{self.path}/model.safetensors",
-                        "vocab": f"{self.path}/vocab.json",
-        }
+        self.path = WORKSPACE_PATH / name
+        self.paths = Paths(
+                       inputs = self.path / "inputs",
+                   checkpoint = self.path / "checkpoint.pth",
+                       config = self.path / "config.json",
+            generation_config = self.path / "generation_config.json",
+                         loss = self.path / "loss.png",
+                        model = self.path / "model.safetensors",
+                        vocab = self.path / "vocab.json",
+        )
 
         if seed is not None:
             torch.manual_seed(seed)
@@ -86,10 +98,7 @@ class WorkSpace:
         self._model = None
         self._trainer = None
 
-        try:
-            os.listdir(self.path)
-        except FileNotFoundError:
-            os.makedirs(self.path)
+        self.path.mkdir(exist_ok=True)
 
     @property
     def inputs(self) -> dict[str, str]:
@@ -149,6 +158,7 @@ class WorkSpace:
             self._model.to(self.device)
 
     def copy(self, other: WorkSpace | str) -> WorkSpace:
+        import shutil # ruff: ignore[import-outside-top-level]
         if isinstance(other, str):
             other = WorkSpace(other)
         shutil.copytree(other.path, self.path, dirs_exist_ok=True)
@@ -205,25 +215,14 @@ class WorkSpace:
                 yield map(out)
 
     def get_inputs(self) -> None:
-        try:
-            self._inputs = {"input": open(self.paths["input"], encoding="utf-8").read()}
-        except FileNotFoundError:
-            pass
-        else:
-            return
+        if not self.paths.inputs.exists():
+            raise FileNotFoundError(2, "input not found", self.paths.inputs)
 
-        try:
-            self._inputs = {}
-            files = os.listdir(self.paths["inputs"])
-            for file in files:
-                content = open(f"{self.paths["inputs"]}/{file}", encoding="utf-8").read()
-                self._inputs[file.split(".")[0]] = content
-        except FileNotFoundError:
-            pass
-        else:
-            return
-
-        raise FileNotFoundError(2, "input not found", self.path)
+        self._inputs = {}
+        files = self.paths.inputs.glob("*.txt")
+        for file in files:
+            content = file.read_text(encoding="utf-8")
+            self._inputs[file.stem] = content
 
     def setup_tokenizer(self) -> None:
         self.tokenizer = Tokenizer.from_data(self.inputs.values())
@@ -239,38 +238,27 @@ class WorkSpace:
         self.trainer = Trainer(
             self.tokenizer,
             self.model,
-            self.paths["checkpoint"],
+            self.paths.checkpoint,
             self.inputs.values(),
             self.training_config,
             self.adam_config,
         )
 
     def save(self) -> None:
-        with open(self.paths["vocab"], "w", encoding="utf-8") as f:
-            json.dump(self.tokenizer.tokens, f)
-        with open(self.paths["config"], "w", encoding="utf-8") as f:
-            json.dump(self.model.config.to_dict(), f, indent=2)
-        with open(self.paths["generation_config"], "w", encoding="utf-8") as f:
-            json.dump(self.model.generation_config.to_dict(), f, indent=2)
-        safetensors.torch.save_model(self.model, self.paths["model"])
+        self.paths.vocab.write_text(json.dumps(self.tokenizer.tokens), encoding="utf-8")
+        self.paths.config.write_text(json.dumps(self.model.config.to_dict(), indent=2))
+        self.paths.generation_config.write_text(json.dumps(self.model.generation_config.to_dict(), indent=2))
+        save_model(self.model, str(self.paths.model))
 
     def load(self) -> None:
-        try:
-            self.tokenizer = Tokenizer(
-                json.loads(open(self.paths["vocab"], encoding="utf-8").read()),
-            )
-            self.model_config = ModelConfig(
-                **json.loads(open(self.paths["config"], encoding="utf-8").read()),
-            )
-            self.generation_config = GenerationConfig(
-                **json.loads(open(self.paths["generation_config"], encoding="utf-8").read()),
-            )
-            try:
-                safetensors.torch.load_model(self.model, self.paths["model"])
-            except RuntimeError:
-                self.setup_model()
-        except FileNotFoundError:
-            pass
+        if self.paths.vocab.exists():
+            self.tokenizer = Tokenizer(json.loads(self.paths.vocab.read_text(encoding="utf-8")))
+        if self.paths.config.exists():
+            self.model_config = ModelConfig(**json.loads(self.paths.config.read_text()))
+        if self.paths.generation_config.exists():
+            self.generation_config = GenerationConfig(**json.loads(self.paths.generation_config.read_text()))
+        if self.paths.model.exists():
+            load_model(self.model, self.paths.model)
 
     def info(self) -> None:
         print("----")
@@ -286,8 +274,8 @@ class WorkSpace:
             plt.xlabel("num_steps")
             plt.ylabel("loss")
             plt.grid(visible=True)
-            plt.savefig(self.paths["loss"], dpi=300)
+            plt.savefig(self.paths.loss, dpi=300)
             plt.show()
 
     def __repr__(self) -> str:
-        return f"WorkSpace({self.name})"
+        return f"WorkSpace({self.path.name})"
