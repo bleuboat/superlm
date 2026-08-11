@@ -1,11 +1,13 @@
 import torch.nn as nn
 from torch import Tensor
 from superlm.config import ModelConfig
+from .utils import register_model
 
 
 __all__ = ["Bigram"]
 
 
+@register_model
 class Bigram(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()

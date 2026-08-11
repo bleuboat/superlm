@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
+from .utils import register_model
 
 
 __all__ = ["BoW"]
@@ -53,6 +54,7 @@ class Block(nn.Module):
         return x
 
 
+@register_model
 class BoW(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()

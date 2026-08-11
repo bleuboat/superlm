@@ -32,6 +32,7 @@ select = [
     "C4",
     "C90",
     "COM",
+    "DOC",
     "E",
     "F",
     "FBT",
@@ -65,14 +66,20 @@ select = [
     "W",
 ]
 ignore = [
-    "ANN401",   # any type (why not: sometimes we need)
-    "N812",     # lowercase imported as non lowercase (why not: `import torch.nn.functional as F`)
-    "PLR0402",  # manual from import (why not: `import torch.nn as nn`)
-    "RET504",   # unnecessary assign (why not: beauty)
-    "RUF022",   # unsorted dunder all (why not: sorted by category)
-    "S101",     # assert (why not: won't use -o mode)
-    "SIM115",   # open file with context handler (why not: `open(...).read()`)
+    "any-type",                             # why not: sometimes we need
+    "lowercase-imported-as-non-lowercase",  # why not: `import torch.nn.functional as F`
+    "manual-from-import",                   # why not: `import torch.nn as nn`
+    "unnecessary-assign",                   # why not: justify
+    "unsorted-dunder-all",                  # why not: sorted by category
+    "assert",                               # why not: won't use -o mode
+    "open-file-with-context-handler",       # why not: `open(...).read()`
+    # preview
+    "no-self-use",                          # why not: unified interface
+    "non-augmented-assignment",             # why not: unsafe on Tensor
+    "subclass-builtin",                     # why not: 
+    "E2",                                   # why not: justify
 ]
+preview = true
 
 [tool.ruff.lint.pylint]
 max-args = 6
@@ -80,16 +87,17 @@ max-positional-args = 6
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
-    "F403",     # undefined local with import star
-    "F405",     # undefined local with import star usage
+    "undefined-local-with-import-star",
+    "undefined-local-with-import-star-usage",
 ]
 "config.py" = [
-    "FBT003",   # boolean positional value in call
+    "boolean-positional-value-in-call",
 ]
 "dtypes.py" = [
-    "F401",     # unused import
+    "unused-import",
 ]
 "workspace.py" = [
-    "F403",     # undefined local with import star
-    "F405",     # undefined local with import star usage
+    "undefined-local-with-import-star",
+    "undefined-local-with-import-star-usage",
+    "too-many-public-methods",
 ]

@@ -57,13 +57,16 @@ class Tokenizer:
         return torch.tensor([_encode(tokens) for tokens in tokens_list], dtype=torch.long, device=torch.device(device))
 
     def decode(self, contents: Tensor | Iterable[Tensor]) -> list[str]:
+        special_tokens = {self.bos_token_ix, self.eos_token_ix, self.pad_token_ix}
+
         def _decode(content: Tensor) -> str:
             out = []
             for token in content:
                 ix = cast(int, token.item())
-                if ix not in (self.bos_token_ix, self.eos_token_ix, self.pad_token_ix):
+                if ix not in special_tokens:
                     out.append(self.tokens[ix])
             return "".join(out)
+
         return [_decode(content) for content in contents]
 
     __call__ = encode

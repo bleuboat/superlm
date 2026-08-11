@@ -10,7 +10,7 @@ from superlm.config import ModelConfig, GenerationConfig
 
 __all__ = [
     "auto_model",
-    "register_models",
+    "register_model",
     "Model",
     "CausalLM",
     "SequenceClassification",
@@ -26,9 +26,9 @@ def auto_model(config: ModelConfig) -> nn.Module:
     return model_class(config)
 
 
-def register_models(*model_classes: type[nn.Module]) -> None:
-    for model_class in model_classes:
-        MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
+def register_model(model_class: type[nn.Module]) -> type[nn.Module]:
+    MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
+    return model_class
 
 
 class Model(nn.Module):
