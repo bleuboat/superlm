@@ -23,17 +23,11 @@ except ModuleNotFoundError:
 
 __all__ = ["WorkSpace"]
 
-
-def get_workspace_path() -> str:
-    dotenv.load_dotenv()
-    path = os.getenv("WORKSPACE_PATH")
-    if path is None:
-        path = "workspace"
-        dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
-    return path
-
-
-WORKSPACE_PATH = get_workspace_path()
+dotenv.load_dotenv()
+WORKSPACE_PATH = os.getenv("WORKSPACE_PATH")
+if WORKSPACE_PATH is None:
+    WORKSPACE_PATH = "workspace"
+    dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
 
 
 class WorkSpace:
