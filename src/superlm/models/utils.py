@@ -67,8 +67,8 @@ class CausalLM(Model, GenerationMixin):
     def lm_head(self, input: Tensor) -> Tensor:
         if not self.config.tie_word_embeddings:
             return self._lm_head(input)
-        embedding = cast(nn.Embedding, self.model.wte)
-        return F.linear(input, embedding.weight)
+        wte = cast(nn.Embedding, self.model.wte)
+        return F.linear(input, wte.weight)
 
     def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
         x = self.model(input_ids)
