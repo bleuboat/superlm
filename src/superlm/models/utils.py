@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from typing import Any, cast, overload
-from ..generation import GenerationMixin
-from ..tokenizer import Tokenizer
-from ..config import ModelConfig, GenerationConfig
+from superlm.generation import GenerationMixin
+from superlm.tokenizer import Tokenizer
+from superlm.config import ModelConfig, GenerationConfig
 
 
 __all__ = [
@@ -22,9 +22,7 @@ MODEL_CLASSES: dict[str, type[nn.Module]] = {}
 
 
 def auto_model(config: ModelConfig) -> nn.Module:
-    model_class = MODEL_CLASSES.get(config.model_type)
-    if model_class is None:
-        raise RuntimeError("model type not defined")
+    model_class = MODEL_CLASSES[config.model_type]
     return model_class(config)
 
 

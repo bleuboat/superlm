@@ -1,8 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from torch import Tensor
+from typing import Any
 from collections.abc import Generator
+
+from superlm.tokenizer import Tokenizer
+from superlm.streamer import Streamer
+from superlm.config import ModelConfig, GenerationConfig
+
 from .logits_process import (
     LogitsProcessorList,
     TemperatureLogitsWarper,
@@ -14,11 +21,8 @@ from .stopping_criteria import (
     StoppingCriteriaList,
     MaxLengthCriteria,
     MaxTimeCriteria,
-    EosTokenCriteria
+    EosTokenCriteria,
 )
-from ..tokenizer import Tokenizer
-from ..streamer import Streamer
-from ..config import ModelConfig, GenerationConfig
 
 
 __all__ = ["GenerationMixin"]
@@ -39,7 +43,7 @@ class GenerationMixin(nn.Module):
         self.generation_config.eos_token_ix = tokenizer.eos_token_ix
         self.generation_config.pad_token_ix = tokenizer.pad_token_ix
 
-    def _get_generation_config(self, inputs: Tensor, **kwargs) -> GenerationConfig:
+    def _get_generation_config(self, inputs: Tensor, **kwargs: Any) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
         if generation_config.max_new_tokens is not None:
@@ -70,7 +74,7 @@ class GenerationMixin(nn.Module):
         return criteria
 
     @torch.no_grad()
-    def generate(self, inputs: Tensor, streamer: Streamer | None = None, **kwargs) -> Tensor:
+    def generate(self, inputs: Tensor, streamer: Streamer | None = None, **kwargs: Any) -> Tensor:
         generation_config = self._get_generation_config(inputs, **kwargs)
         processors = self._get_processors(generation_config)
         criteria = self._get_criteria(generation_config)
@@ -98,7 +102,7 @@ class GenerationMixin(nn.Module):
         return inputs
 
     @torch.no_grad()
-    def api(self, inputs: Tensor, **kwargs) -> Generator[Tensor]:
+    def api(self, inputs: Tensor, **kwargs: Any) -> Generator[Tensor]:
         generation_config = self._get_generation_config(inputs, **kwargs)
         processors = self._get_processors(generation_config)
         criteria = self._get_criteria(generation_config)

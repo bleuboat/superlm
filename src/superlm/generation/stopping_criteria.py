@@ -8,7 +8,7 @@ class StoppingCriteriaList(list):
 
 
 class MaxLengthCriteria:
-    def __init__(self, max_length: int):
+    def __init__(self, max_length: int) -> None:
         self.max_length = max_length
 
     def __call__(self, input_ids: Tensor) -> bool:
@@ -16,7 +16,7 @@ class MaxLengthCriteria:
 
 
 class MaxTimeCriteria:
-    def __init__(self, max_time: float, initial_timestamp: float | None = None):
+    def __init__(self, max_time: float, initial_timestamp: float | None = None) -> None:
         self.max_time = max_time
         self.initial_timestamp = time.time() if initial_timestamp is None else initial_timestamp
 
@@ -25,7 +25,7 @@ class MaxTimeCriteria:
 
 
 class EosTokenCriteria:
-    def __init__(self, eos_token_ix: int):
+    def __init__(self, eos_token_ix: int) -> None:
         self.eos_token_ix = eos_token_ix
 
     def __call__(self, input_ids: Tensor) -> bool:

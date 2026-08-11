@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from ..activations import ACTIVATIONS
-from ..config import ModelConfig
+from superlm.activations import ACTIVATIONS
+from superlm.config import ModelConfig
 
 
 __all__ = ["BoW"]
@@ -19,9 +19,9 @@ class CausalBoW(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x: Tensor) -> Tensor:
-        B, T, _ = x.size()
-        att = torch.zeros((B, T, T), device=x.device)
-        att = att.masked_fill(self.bias[:, :T, :T] == 0, float("-inf"))
+        b, t, _ = x.size()
+        att = torch.zeros((b, t, t), device=x.device)
+        att = att.masked_fill(self.bias[:, :t, :t] == 0, float("-inf"))
         att = F.softmax(att, dim=-1)
         y = att @ x
         return self.dropout(y)

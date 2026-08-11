@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torch import Tensor
-from ..config import ModelConfig
+from superlm.config import ModelConfig
 
 
 __all__ = ["Bigram"]

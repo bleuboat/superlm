@@ -1,6 +1,6 @@
 from .activations import ACTIVATIONS
 from typing import Any, Self
-from collections.abc import Iterator
+from collections.abc import Iterator, KeysView, ValuesView, ItemsView
 
 
 __all__ = ["ModelConfig", "GenerationConfig", "TrainingConfig", "AdamConfig"]
@@ -19,8 +19,7 @@ class Parameter:
     def get(self) -> Any:
         if self.value is not None:
             return self.value
-        else:
-            return self.default()
+        return self.default()
 
     def set(self, value: Any) -> None:
         if isinstance(value, Parameter):
@@ -44,8 +43,6 @@ class Kwargs:
 
 
 class Config(dict[str, Parameter]):
-    __slots__ = ()
-
     def __init__(self, **kwargs: Any) -> None:
         new_kwargs = Kwargs(kwargs)
         self.init(new_kwargs)
@@ -87,13 +84,13 @@ class Config(dict[str, Parameter]):
     def copy(self: Self) -> Self:
         return type(self)(**self)
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         return self.to_dict().keys()
 
-    def values(self):
+    def values(self) -> ValuesView[Any]:
         return self.to_dict().values()
 
-    def items(self):
+    def items(self) -> ItemsView[str, Any]:
         return self.to_dict().items()
 
     def update(self, /, **kwargs: Any) -> None:
@@ -103,14 +100,13 @@ class Config(dict[str, Parameter]):
 
 class ModelConfig(Config):
     def check(self) -> None:
-        if self.model_type == "transformer" and self.n_embd % self.n_head != 0:
-            raise AssertionError("embed_dim must be divisible by num_heads")
-        if self.hidden_act not in ACTIVATIONS:
-            raise AssertionError("unknown hidden activation")
+        if self.model_type == "transformer":
+            assert self.n_embd % self.n_head != 0, "embed_dim must be divisible by num_heads"
+        assert self.hidden_act in ACTIVATIONS, "unknown hidden activation"
 
     def init(self, kwargs: Kwargs) -> None:
-        self.model_type         : str                 = kwargs.parameter("model_type",)
-        self.vocab_size         : int                 = kwargs.parameter("vocab_size",)
+        self.model_type         : str                 = kwargs.parameter("model_type")
+        self.vocab_size         : int                 = kwargs.parameter("vocab_size")
 
         self.n_layer            : int                 = kwargs.parameter("n_layer", 4)
         self.n_embd             : int                 = kwargs.parameter("n_embd", 256)

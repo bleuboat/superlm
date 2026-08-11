@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from ..activations import ACTIVATIONS
-from ..config import ModelConfig
+from superlm.activations import ACTIVATIONS
+from superlm.config import ModelConfig
 
 
-__all__ = ["SuperLM_Model"]
+__all__ = ["SuperlmModel"]
 
 
-class SuperLM_RotaryEmbedding(nn.Module):
+class SuperlmRotaryEmbedding(nn.Module):
     inv_freq: Tensor
 
     def __init__(self, config: ModelConfig) -> None:
@@ -29,7 +29,7 @@ class SuperLM_RotaryEmbedding(nn.Module):
         return cos, sin
 
 
-def rotate_half(x):
+def rotate_half(x: Tensor) -> Tensor:
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
@@ -51,7 +51,7 @@ def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
     return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
 
 
-class SuperLM_Attention(nn.Module):
+class SuperlmAttention(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.n_embd = config.n_embd
@@ -66,24 +66,24 @@ class SuperLM_Attention(nn.Module):
         self.o_proj = nn.Linear(self.n_head * self.n_head_dim, self.n_embd, bias=False)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
-        B, T, C = x.size()
+        b, t, c = x.size()
 
-        q = self.q_attn(x).view(B, T, self.n_head,    self.n_head_dim).transpose(1, 2)
-        k = self.k_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2)
-        v = self.v_attn(x).view(B, T, self.n_kv_head, self.n_head_dim).transpose(1, 2)
+        q = self.q_attn(x).view(b, t, self.n_head,    self.n_head_dim).transpose(1, 2)
+        k = self.k_attn(x).view(b, t, self.n_kv_head, self.n_head_dim).transpose(1, 2)
+        v = self.v_attn(x).view(b, t, self.n_kv_head, self.n_head_dim).transpose(1, 2)
 
         cos, sin = pos_emb
         q, k = apply_rotary_pos_emb(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_kv_group), repeat_kv(v, self.n_kv_group)
 
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout if self.training else 0)
-        y = y.transpose(1, 2).contiguous().view(B, T, C)
+        y = y.transpose(1, 2).contiguous().view(b, t, c)
 
         y = self.o_proj(y)
         return y
 
 
-class SuperLM_MLP(nn.Module):
+class SuperlmMLP(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
@@ -95,13 +95,13 @@ class SuperLM_MLP(nn.Module):
         return self.down(self.act(self.gate(x)) * self.up(x))
 
 
-class SuperLM_Layer(nn.Module):
+class SuperlmLayer(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.attn = SuperLM_Attention(config)
+        self.attn = SuperlmAttention(config)
         self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
-        self.ffnf = SuperLM_MLP(config)
+        self.ffnf = SuperlmMLP(config)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         x = x + self.attn(self.ln_1(x), pos_emb)
@@ -109,12 +109,12 @@ class SuperLM_Layer(nn.Module):
         return x
 
 
-class SuperLM_Model(nn.Module):
+class SuperlmModel(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
-        self.wpe = SuperLM_RotaryEmbedding(config)
-        self.layers = nn.ModuleList([SuperLM_Layer(config) for _ in range(config.n_layer)])
+        self.wpe = SuperlmRotaryEmbedding(config)
+        self.layers = nn.ModuleList([SuperlmLayer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
 
     def forward(self, idx: Tensor) -> Tensor:

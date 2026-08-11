@@ -6,7 +6,7 @@ __all__ = ["Streamer"]
 
 
 class Streamer:
-    def __init__(self, tokenizer: Tokenizer, skip_prompt: bool = False):
+    def __init__(self, tokenizer: Tokenizer, *, skip_prompt: bool = False) -> None:
         self.tokenizer = tokenizer
         self.skip_prompt = skip_prompt
         self.next_tokens_are_prompt = True

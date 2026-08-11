@@ -14,6 +14,8 @@ dependencies = [
     "safetensors>=0.8.0",
 ]
 
+[tool]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = {find = {where = ["src"]}}
@@ -24,42 +26,70 @@ exclude = ["tests/", "run/"]
 
 [tool.ruff.lint]
 select = [
-    "B",     # used
-    "C",
+    "ANN",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "F",
+    "FBT",
+    "FIX",
+    "FLY",
+    "FURB",
     "G",
-    "E",     # used
-    "EXE",
-    "F",     # used
-    "SIM",   # used
-    "W",     # used
-    "FURB",  # used
+    "ICN",
+    "INP",
+    "ISC",
     "LOG",
-    "NPY",
+    "N",
     "PERF",
-    "PGH",
     "PIE",
     "PLC",
     "PLE",
-    "PLR",   # used
+    "PLR",
     "PLW",
-    "PT",
     "PYI",
-    "Q",     # used
+    "Q",
+    "RET",
     "RSE",
-    "RUF",   # used
-    "S",     # used
+    "RUF",
+    "S",
+    "SIM",
+    "SLF",
     "SLOT",
-    "TRY",   # used
+    "TID",
+    "TRY",
     "UP",
-    "YTT",
+    "W",
 ]
 ignore = [
-    "F403",
-    "F405",
-    "RUF022",
-    "PLR0402",
-    "PLR0913",
-    "PLR0917",
-    "SIM115",
-    "TRY003",
+    "ANN401",   # any type (why not: sometimes we need)
+    "N812",     # lowercase imported as non lowercase (why not: `import torch.nn.functional as F`)
+    "PLR0402",  # manual from import (why not: `import torch.nn as nn`)
+    "RET504",   # unnecessary assign (why not: beauty)
+    "RUF022",   # unsorted dunder all (why not: sorted by category)
+    "S101",     # assert (why not: won't use -o mode)
+    "SIM115",   # open file with context handler (why not: `open(...).read()`)
+]
+
+[tool.ruff.lint.pylint]
+max-args = 6
+max-positional-args = 6
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F403",     # undefined local with import star
+    "F405",     # undefined local with import star usage
+]
+"config.py" = [
+    "FBT003",   # boolean positional value in call
+]
+"dtypes.py" = [
+    "F401",     # unused import
+]
+"workspace.py" = [
+    "F403",     # undefined local with import star
+    "F405",     # undefined local with import star usage
 ]

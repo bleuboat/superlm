@@ -6,7 +6,7 @@ import shutil
 import safetensors.torch
 
 from torch._prims_common import DeviceLikeType
-from typing import cast
+from typing import Any, cast
 from collections.abc import Callable, Generator, Sequence
 
 from .config    import *
@@ -167,7 +167,7 @@ class WorkSpace:
         other.copy(self)
         return other
 
-    def config(self, **configs) -> None:
+    def config(self, **configs: Any) -> None:
         for k, v in configs.items():
             for config in (self.model_config, self.generation_config, self.training_config, self.adam_config):
                 if k in config:
@@ -193,14 +193,14 @@ class WorkSpace:
         self.save()
         self.show_losses(self.trainer.losses)
 
-    def generate(self, inputs: str, *, stream: bool = False, **kwargs) -> str:
+    def generate(self, inputs: str, *, stream: bool = False, **kwargs: Any) -> str:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         streamer = self.streamer if stream else None
         res = self.model.generate(inputs_tensor, streamer=streamer, **kwargs)
         return self.tokenizer.decode(res)[0]
 
-    def api(self, inputs: str, map: Callable[[str], str] | None = None, **kwargs) -> Generator[str]:
+    def api(self, inputs: str, map: Callable[[str], str] | None = None, **kwargs: Any) -> Generator[str]:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         for token in self.model.api(inputs_tensor, **kwargs):
@@ -214,14 +214,22 @@ class WorkSpace:
         try:
             self._inputs = {"input": open(self.paths["input"], encoding="utf-8").read()}
         except FileNotFoundError:
-            try:
-                self._inputs = {}
-                files = os.listdir(self.paths["inputs"])
-                for file in files:
-                    content = open(f"{self.paths["inputs"]}/{file}", encoding="utf-8").read()
-                    self._inputs[file.split(".")[0]] = content
-            except FileNotFoundError as e:
-                raise FileNotFoundError(f"input not found. (at {self.path})") from e
+            pass
+        else:
+            return
+
+        try:
+            self._inputs = {}
+            files = os.listdir(self.paths["inputs"])
+            for file in files:
+                content = open(f"{self.paths["inputs"]}/{file}", encoding="utf-8").read()
+                self._inputs[file.split(".")[0]] = content
+        except FileNotFoundError:
+            pass
+        else:
+            return
+
+        raise FileNotFoundError(2, "input not found", self.path)
 
     def setup_tokenizer(self) -> None:
         self.tokenizer = Tokenizer.from_data(self.inputs.values())
@@ -255,13 +263,13 @@ class WorkSpace:
     def load(self) -> None:
         try:
             self.tokenizer = Tokenizer(
-                json.loads(open(self.paths["vocab"], encoding="utf-8").read())
+                json.loads(open(self.paths["vocab"], encoding="utf-8").read()),
             )
             self.model_config = ModelConfig(
-                **json.loads(open(self.paths["config"], encoding="utf-8").read())
+                **json.loads(open(self.paths["config"], encoding="utf-8").read()),
             )
             self.generation_config = GenerationConfig(
-                **json.loads(open(self.paths["generation_config"], encoding="utf-8").read())
+                **json.loads(open(self.paths["generation_config"], encoding="utf-8").read()),
             )
             try:
                 safetensors.torch.load_model(self.model, self.paths["model"])
@@ -283,7 +291,7 @@ class WorkSpace:
             plt.plot(x, y)
             plt.xlabel("num_steps")
             plt.ylabel("loss")
-            plt.grid(True)
+            plt.grid(visible=True)
             plt.savefig(self.paths["loss"], dpi=300)
             plt.show()
 

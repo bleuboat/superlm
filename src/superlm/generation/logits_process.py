@@ -10,7 +10,7 @@ class LogitsProcessorList(list):
 
 
 class TemperatureLogitsWarper:
-    def __init__(self, temperature: float):
+    def __init__(self, temperature: float) -> None:
         self.temperature = temperature
 
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
@@ -19,7 +19,7 @@ class TemperatureLogitsWarper:
 
 
 class RepetitionPenaltyLogitsProcessor:
-    def __init__(self, penalty: float):
+    def __init__(self, penalty: float) -> None:
         self.penalty = penalty
 
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
@@ -30,7 +30,7 @@ class RepetitionPenaltyLogitsProcessor:
 
 
 class TopPLogitsWarper:
-    def __init__(self, top_p: float, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1):
+    def __init__(self, top_p: float, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1) -> None:
         self.top_p = top_p
         self.filter_value = filter_value
         self.min_tokens_to_keep = min_tokens_to_keep
@@ -46,7 +46,7 @@ class TopPLogitsWarper:
 
 
 class TopKLogitsWarper:
-    def __init__(self, top_k: int, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1):
+    def __init__(self, top_k: int, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1) -> None:
         self.top_k = max(top_k, min_tokens_to_keep)
         self.filter_value = filter_value
 
