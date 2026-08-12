@@ -75,7 +75,7 @@ ignore = [
     "assert",                               # why not: won't use -o mode
     "no-self-use",                          # why not: unified interface
     "non-augmented-assignment",             # why not: unsafe on Tensor
-    "subclass-builtin",                     # why not: 
+    "subclass-builtin",                     # why not: unsafe
     "E2",                                   # why not: justify
 ]
 preview = true
