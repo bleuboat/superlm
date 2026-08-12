@@ -281,4 +281,4 @@ class WorkSpace:
             plt.show()
 
     def __repr__(self) -> str:
-        return f"WorkSpace({self.paths.space_name}/({self.paths.model_name}))"
+        return f"WorkSpace({self.paths.space_name}/{self.paths.model_name})"
