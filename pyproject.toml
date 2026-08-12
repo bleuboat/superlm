@@ -73,8 +73,6 @@ ignore = [
     "unnecessary-assign",                   # why not: justify
     "unsorted-dunder-all",                  # why not: sorted by category
     "assert",                               # why not: won't use -o mode
-    "open-file-with-context-handler",       # why not: `open(...).read()`
-    # preview
     "no-self-use",                          # why not: unified interface
     "non-augmented-assignment",             # why not: unsafe on Tensor
     "subclass-builtin",                     # why not: 
