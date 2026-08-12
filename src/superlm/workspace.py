@@ -3,7 +3,6 @@ import json
 import torch
 import dotenv
 from pathlib import Path
-from dataclasses import dataclass
 from safetensors.torch import save_model, load_model
 
 from torch._prims_common import DeviceLikeType
@@ -33,46 +32,43 @@ if path is None:
 WORKSPACE_PATH = Path(path)
 
 
-@dataclass
 class Paths:
-    inputs: Path
-    checkpoint: Path
-    config: Path
-    generation_config: Path
-    loss: Path
-    model: Path
-    vocab: Path
+    def __init__(self, space_name: str, model_name: str = "model") -> None:
+        self.space_name = space_name
+        self.model_name = model_name
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        if name == "model_name":
+            self._get_paths()
+
+    def _get_paths(self) -> None:
+        root = WORKSPACE_PATH
+        space = self.space_name
+        input = "inputs"
+        model = f"models--{self.model_name}"
+
+        self.root              = root / space
+        self.inputs            = root / space / input
+        self.model_root        = root / space / model
+        self.checkpoint        = root / space / model / "checkpoint.pth"
+        self.config            = root / space / model / "config.json"
+        self.generation_config = root / space / model / "generation-config.json"
+        self.loss              = root / space / model / "loss.png"
+        self.model             = root / space / model / "model.safetensors"
+        self.vocab             = root / space / model / "vocab.json"
 
 
 class WorkSpace:
-    name: str
-    path: Path
-    paths: Paths
-    dtype: torch.dtype
-    device: torch.device
-    model_config: ModelConfig
-    generation_config: GenerationConfig
-    training_config: TrainingConfig
-    adam_config: AdamConfig
-
     def __init__(
         self,
-        name: str,
+        path: str,
         *,
         seed: int | None = None,
         dtype: torch.dtype | None = None,
         device: DeviceLikeType | None = None,
     ) -> None:
-        self.path = WORKSPACE_PATH / name
-        self.paths = Paths(
-                       inputs = self.path / "inputs",
-                   checkpoint = self.path / "checkpoint.pth",
-                       config = self.path / "config.json",
-            generation_config = self.path / "generation_config.json",
-                         loss = self.path / "loss.png",
-                        model = self.path / "model.safetensors",
-                        vocab = self.path / "vocab.json",
-        )
+        self.paths = Paths(*path.split("/"))
 
         if seed is not None:
             torch.manual_seed(seed)
@@ -81,6 +77,8 @@ class WorkSpace:
             torch.set_default_dtype(dtype)
         else:
             torch.set_default_dtype(torch.bfloat16)
+
+        self.dtype = torch.get_default_dtype()
 
         if device is not None:
             self.device = torch.device(device)
@@ -98,7 +96,7 @@ class WorkSpace:
         self._model = None
         self._trainer = None
 
-        self.path.mkdir(exist_ok=True)
+        self.paths.root.mkdir(exist_ok=True)
 
     @property
     def inputs(self) -> dict[str, str]:
@@ -151,17 +149,21 @@ class WorkSpace:
 
     def set_dtype(self, dtype: torch.dtype) -> None:
         torch.set_default_dtype(dtype)
+        self.dtype = dtype
 
     def set_device(self, device: DeviceLikeType) -> None:
         self.device = torch.device(device)
         if self._model is not None:
             self._model.to(self.device)
 
+    def set_model_name(self, model_name: str) -> None:
+        self.paths.model_name = model_name
+
     def copy(self, other: WorkSpace | str) -> WorkSpace:
         import shutil # ruff: ignore[import-outside-top-level]
         if isinstance(other, str):
             other = WorkSpace(other)
-        shutil.copytree(other.path, self.path, dirs_exist_ok=True)
+        shutil.copytree(other.paths.root, self.paths.root, dirs_exist_ok=True)
         self.load()
         return self
 
@@ -245,6 +247,7 @@ class WorkSpace:
         )
 
     def save(self) -> None:
+        self.paths.model_root.mkdir(exist_ok=True)
         self.paths.vocab.write_text(json.dumps(self.tokenizer.tokens), encoding="utf-8")
         self.paths.config.write_text(json.dumps(self.model.config.to_dict(), indent=2))
         self.paths.generation_config.write_text(json.dumps(self.model.generation_config.to_dict(), indent=2))
@@ -278,4 +281,4 @@ class WorkSpace:
             plt.show()
 
     def __repr__(self) -> str:
-        return f"WorkSpace({self.path.name})"
+        return f"WorkSpace({self.paths.space_name}/({self.paths.model_name}))"

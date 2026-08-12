@@ -83,8 +83,9 @@ ignore = [
 preview = true
 
 [tool.ruff.lint.pylint]
-max-args = 6
-max-positional-args = 6
+max-args = 10
+max-positional-args = 10
+max-returns = 10
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
