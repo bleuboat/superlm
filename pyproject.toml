@@ -20,6 +20,9 @@ dependencies = [
 package-dir = {"" = "src"}
 packages = {find = {where = ["src"]}}
 
+[tool.mypy]
+exclude = ["workspace.py"]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false

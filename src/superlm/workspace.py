@@ -1,5 +1,3 @@
-# mypy: ignore-errors
-
 import os
 import json
 import torch
