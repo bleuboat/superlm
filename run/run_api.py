@@ -11,7 +11,7 @@ CORS(app)
 def get_workspace(name: str) -> WorkSpace:
     return WorkSpace(name)
 
-def sse(x):
+def sse(x: str) -> str:
     with app.app_context():
         return f'data: {x}\n\n'
 

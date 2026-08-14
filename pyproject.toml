@@ -23,6 +23,7 @@ packages = {find = {where = ["src"]}}
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
+exclude = ["tests/", "**/node_modules", "**/__pycache__", "**/.*"]
 
 [tool.ruff]
 line-length = 120
