@@ -39,8 +39,8 @@ class Trainer:
         self.accumulation_steps = training_config.accumulation_steps
         self.num_steps = 0
         self.step = 0
-        self.start_time = 0
-        self.losses = []
+        self.start_time = 0.0
+        self.losses: list[tuple[int, float]] = []
 
         ignore_index = tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)

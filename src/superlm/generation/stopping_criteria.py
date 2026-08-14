@@ -2,7 +2,7 @@ import time
 from torch import Tensor
 
 
-class StoppingCriteriaList(list):
+class StoppingCriteriaList(list): # ruff: ignore[subclass-builtin]
     def __call__(self, input_ids: Tensor) -> bool:
         return any(criteria(input_ids) for criteria in self)
 

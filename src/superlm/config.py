@@ -1,6 +1,6 @@
 from .activations import ACTIVATIONS
 from typing import Any, Self
-from collections.abc import Iterator, KeysView, ValuesView, ItemsView
+from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
 
 __all__ = ["ModelConfig", "GenerationConfig", "TrainingConfig", "AdamConfig"]
@@ -42,8 +42,12 @@ class Kwargs:
         return Parameter(self.kwargs.pop(name, None), default)
 
 
-class Config(dict[str, Parameter]):
+class Config(MutableMapping[str, Any]):
+    __slots__ = ("_data",)
+    _data: dict[str, Parameter]
+
     def __init__(self, **kwargs: Any) -> None:
+        super().__setattr__("_data", {})
         new_kwargs = Kwargs(kwargs)
         self.init(new_kwargs)
         if len(new_kwargs.kwargs) > 0:
@@ -51,14 +55,17 @@ class Config(dict[str, Parameter]):
 
     def __setitem__(self, key: str, value: Any) -> None:
         if key in self:
-            super().__getitem__(key).set(value)
+            self._data[key].set(value)
         elif isinstance(value, Parameter):
-            super().__setitem__(key, value)
+            self._data[key] = value
         else:
-            super().__setitem__(key, Parameter(value))
+            self._data[key] = Parameter(value)
 
     def __getitem__(self, key: str) -> Any:
-        return super().__getitem__(key).get()
+        return self._data[key].get()
+
+    def __delitem__(self, key: str) -> Any:
+        raise NotImplementedError("don't delete config's items")
 
     def __setattr__(self, key: str, value: Any) -> None:
         self[key] = value
@@ -66,11 +73,20 @@ class Config(dict[str, Parameter]):
     def __getattr__(self, key: str) -> Any:
         return self[key]
 
+    def __len__(self) -> int:
+        return self._data.__len__()
+
     def __iter__(self) -> Iterator[str]:
-        return super().__iter__()
+        return self._data.__iter__()
+
+    def __contains__(self, key: Any) -> bool:
+        return self._data.__contains__(key)
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
+        return f"{self.__class__.__name__}({", ".join(f"{k}={self[k]}" for k in self)})"
 
     def init(self, kwargs: Kwargs) -> None:
         return
@@ -78,22 +94,21 @@ class Config(dict[str, Parameter]):
     def check(self) -> None:
         return
 
-    def to_dict(self) -> dict[str, Any]:
-        return {k: self[k] for k in self}
-
     def copy(self: Self) -> Self:
         return type(self)(**self)
 
     def keys(self) -> KeysView[str]:
-        return self.to_dict().keys()
+        return self._data.keys()
 
     def values(self) -> ValuesView[Any]:
-        return self.to_dict().values()
+        return self._data.values()
 
     def items(self) -> ItemsView[str, Any]:
-        return self.to_dict().items()
+        return self._data.items()
 
-    def update(self, /, **kwargs: Any) -> None:
+    def update(self, other: Any = None, /, **kwargs: Any) -> None:
+        if other:
+            raise NotImplementedError("'other' argument is not implemented")
         for k, v in kwargs.items():
             self[k] = v
 

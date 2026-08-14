@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Any, cast, overload
+from typing import cast, overload
 from superlm.generation import GenerationMixin
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
@@ -40,7 +40,7 @@ class Model(nn.Module):
     def __call__(self, input_ids: Tensor, labels: Tensor) -> tuple[Tensor, Tensor]:
         ...
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args, **kwargs):
         return self._wrapped_call_impl(*args, **kwargs)
 
     @property

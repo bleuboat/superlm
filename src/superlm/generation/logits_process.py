@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 
 
-class LogitsProcessorList(list):
+class LogitsProcessorList(list): # ruff: ignore[subclass-builtin]
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         for processor in self:
             scores = processor(input_ids, scores)

@@ -249,8 +249,8 @@ class WorkSpace:
     def save(self) -> None:
         self.paths.model_root.mkdir(exist_ok=True)
         self.paths.vocab.write_text(json.dumps(self.tokenizer.tokens), encoding="utf-8")
-        self.paths.config.write_text(json.dumps(self.model.config.to_dict(), indent=2))
-        self.paths.generation_config.write_text(json.dumps(self.model.generation_config.to_dict(), indent=2))
+        self.paths.config.write_text(json.dumps(dict(self.model.config), indent=2))
+        self.paths.generation_config.write_text(json.dumps(dict(self.model.generation_config), indent=2))
         save_model(self.model, str(self.paths.model))
 
     def load(self) -> None:
@@ -269,7 +269,7 @@ class WorkSpace:
         print(f"data size: {self.trainer.dataset.length}")
         print(f"vocab size: {self.tokenizer.vocab_size}")
 
-    def show_losses(self, losses: list[tuple[int, int]]) -> None:
+    def show_losses(self, losses: list[tuple[int, float]]) -> None:
         print("----")
         if plt is not None:
             x, y = zip(*losses, strict=True)
