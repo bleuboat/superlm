@@ -2,12 +2,17 @@ import time
 from torch import Tensor
 
 
-class StoppingCriteriaList(list): # ruff: ignore[subclass-builtin]
+class StoppingCriteria:
+    def __call__(self, input_ids: Tensor) -> bool:
+        raise NotImplementedError
+
+
+class StoppingCriteriaList(list[StoppingCriteria]): # ruff: ignore[subclass-builtin]
     def __call__(self, input_ids: Tensor) -> bool:
         return any(criteria(input_ids) for criteria in self)
 
 
-class MaxLengthCriteria:
+class MaxLengthCriteria(StoppingCriteria):
     def __init__(self, max_length: int) -> None:
         self.max_length = max_length
 
@@ -15,7 +20,7 @@ class MaxLengthCriteria:
         return input_ids.shape[-1] >= self.max_length
 
 
-class MaxTimeCriteria:
+class MaxTimeCriteria(StoppingCriteria):
     def __init__(self, max_time: float, initial_timestamp: float | None = None) -> None:
         self.max_time = max_time
         self.initial_timestamp = time.time() if initial_timestamp is None else initial_timestamp
@@ -24,7 +29,7 @@ class MaxTimeCriteria:
         return time.time() - self.initial_timestamp > self.max_time
 
 
-class EosTokenCriteria:
+class EosTokenCriteria(StoppingCriteria):
     def __init__(self, eos_token_ix: int) -> None:
         self.eos_token_ix = eos_token_ix
 

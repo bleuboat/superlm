@@ -52,14 +52,14 @@ class GenerationMixin(nn.Module):
 
     def _get_processors(self, generation_config: GenerationConfig) -> LogitsProcessorList:
         processors = LogitsProcessorList()
-        if generation_config.repetition_penalty is not None and generation_config.repetition_penalty != 1:
+        if generation_config.repetition_penalty != 1:
             processors.append(RepetitionPenaltyLogitsProcessor(penalty=generation_config.repetition_penalty))
         if generation_config.do_sample:
-            if generation_config.temperature is not None and generation_config.temperature != 1:
+            if generation_config.temperature != 1:
                 processors.append(TemperatureLogitsWarper(generation_config.temperature))
-            if generation_config.top_k is not None and generation_config.top_k != 0:
+            if generation_config.top_k != 0:
                 processors.append(TopKLogitsWarper(generation_config.top_k))
-            if generation_config.top_p is not None and generation_config.top_p < 1:
+            if generation_config.top_p < 1:
                 processors.append(TopPLogitsWarper(generation_config.top_p))
         return processors
 

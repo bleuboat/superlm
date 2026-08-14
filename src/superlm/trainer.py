@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from pathlib import Path
 
-from typing import cast
+from typing import Any, cast
 from collections.abc import Iterable, Sequence
 
 from .config import TrainingConfig, AdamConfig
@@ -42,7 +42,7 @@ class Trainer:
         self.start_time = 0.0
         self.losses: list[tuple[int, float]] = []
 
-        ignore_index = tokenizer.pad_token_ix if tokenizer.pad_token_ix is not None else -100
+        ignore_index = tokenizer.pad_token_ix
         self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)
         self.optimizer = optim.AdamW(model.parameters(), **adam_config)
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
@@ -124,7 +124,7 @@ class Trainer:
         if self.smooth_loss >= self.best_loss:
             return
         self.best_loss = self.smooth_loss
-        checkpoint = {
+        checkpoint: dict[str, Any] = {
             "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "scheduler_state_dict": self.scheduler.state_dict(),

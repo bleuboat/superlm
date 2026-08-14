@@ -40,8 +40,8 @@ class Model(nn.Module):
     def __call__(self, input_ids: Tensor, labels: Tensor) -> tuple[Tensor, Tensor]:
         ...
 
-    def __call__(self, *args, **kwargs):
-        return self._wrapped_call_impl(*args, **kwargs)
+    def __call__(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
+        return self._wrapped_call_impl(input_ids, labels) # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
     @property
     def num_parameters(self) -> int:

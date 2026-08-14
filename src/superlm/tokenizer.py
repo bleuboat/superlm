@@ -31,8 +31,8 @@ class Tokenizer:
         self.pad_token_ix = self.token_to_ix["<PAD>"]
 
     def encode(self, contents: Iterable[str], *, special_tokens: Container[str], device: DeviceLikeType) -> Tensor:
-        tokens_list = []
-        tokens_length = []
+        tokens_list: list[list[str]] = []
+        tokens_length: list[int] = []
         for content in contents:
             tokens = PATTERN.findall(content)
             tokens_list.append(tokens)
@@ -40,7 +40,7 @@ class Tokenizer:
         max_length = max(tokens_length)
 
         def _encode(tokens: list[str]) -> list[int]:
-            out = []
+            out: list[int] = []
             if "bos" in special_tokens:
                 out.append(self.bos_token_ix)
             for token in tokens:
@@ -60,7 +60,7 @@ class Tokenizer:
         special_tokens = {self.bos_token_ix, self.eos_token_ix, self.pad_token_ix}
 
         def _decode(content: Tensor) -> str:
-            out = []
+            out: list[str] = []
             for token in content:
                 ix = cast(int, token.item())
                 if ix not in special_tokens:

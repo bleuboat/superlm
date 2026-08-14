@@ -145,7 +145,7 @@ class GenerationConfig(Config):
     def init(self, kwargs: Kwargs) -> None:
         self.max_length         : int | None          = kwargs.parameter("max_length", 512)
         self.max_new_tokens     : int | None          = kwargs.parameter("max_new_tokens", None)
-        self.max_time           : int | float         = kwargs.parameter("max_time", None)
+        self.max_time           : int | float | None  = kwargs.parameter("max_time", None)
 
         self.do_sample          : bool                = kwargs.parameter("do_sample", True)
         self.temperature        : float               = kwargs.parameter("temperature", 1.0)

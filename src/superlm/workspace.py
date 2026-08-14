@@ -1,9 +1,11 @@
+# mypy: ignore-errors
+
 import os
 import json
 import torch
 import dotenv
 from pathlib import Path
-from safetensors.torch import save_model, load_model
+from safetensors.torch import save_model, load_model # pyright: ignore[reportUnknownVariableType]
 
 from torch._prims_common import DeviceLikeType
 from typing import Any, cast
@@ -220,11 +222,13 @@ class WorkSpace:
         if not self.paths.inputs.exists():
             raise FileNotFoundError(2, "input not found", self.paths.inputs)
 
-        self._inputs = {}
+        inputs: dict[str, str] = {}
         files = self.paths.inputs.glob("*.txt")
         for file in files:
             content = file.read_text(encoding="utf-8")
-            self._inputs[file.stem] = content
+            inputs[file.stem] = content
+
+        self._inputs = inputs
 
     def setup_tokenizer(self) -> None:
         self.tokenizer = Tokenizer.from_data(self.inputs.values())

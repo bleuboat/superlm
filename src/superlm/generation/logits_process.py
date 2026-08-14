@@ -2,14 +2,19 @@ import torch
 from torch import Tensor
 
 
-class LogitsProcessorList(list): # ruff: ignore[subclass-builtin]
+class LogitsProcessor:
+    def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
+        raise NotImplementedError
+
+
+class LogitsProcessorList(list[LogitsProcessor]): # ruff: ignore[subclass-builtin]
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         for processor in self:
             scores = processor(input_ids, scores)
         return scores
 
 
-class TemperatureLogitsWarper:
+class TemperatureLogitsWarper(LogitsProcessor):
     def __init__(self, temperature: float) -> None:
         self.temperature = temperature
 
@@ -18,7 +23,7 @@ class TemperatureLogitsWarper:
         return scores_processed
 
 
-class RepetitionPenaltyLogitsProcessor:
+class RepetitionPenaltyLogitsProcessor(LogitsProcessor):
     def __init__(self, penalty: float) -> None:
         self.penalty = penalty
 
@@ -29,7 +34,7 @@ class RepetitionPenaltyLogitsProcessor:
         return scores_processed
 
 
-class TopPLogitsWarper:
+class TopPLogitsWarper(LogitsProcessor):
     def __init__(self, top_p: float, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1) -> None:
         self.top_p = top_p
         self.filter_value = filter_value
@@ -45,7 +50,7 @@ class TopPLogitsWarper:
         return scores_processed
 
 
-class TopKLogitsWarper:
+class TopKLogitsWarper(LogitsProcessor):
     def __init__(self, top_k: int, filter_value: float = -float("Inf"), min_tokens_to_keep: int = 1) -> None:
         self.top_k = max(top_k, min_tokens_to_keep)
         self.filter_value = filter_value
