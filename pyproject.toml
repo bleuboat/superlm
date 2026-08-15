@@ -26,11 +26,9 @@ exclude = ["workspace.py"]
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-exclude = [
-    "tests/",
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.*",
+ignore = [
+    "**/dtypes.py",
+    "**/tests",
 ]
 
 [tool.ruff]

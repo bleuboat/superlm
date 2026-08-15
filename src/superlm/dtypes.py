@@ -1,4 +1,3 @@
-# type: ignore
 from torch import (
     float32,
     float,
