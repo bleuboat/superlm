@@ -121,8 +121,10 @@ class ModelConfig(Config):
         assert self.hidden_act in ACTIVATIONS, f"unknown hidden activation '{self.hidden_act}'"
 
     def init(self, kwargs: Kwargs) -> None:
-        self.model_type: str              = kwargs.parameter("model_type")
-        self.vocab_size: int              = kwargs.parameter("vocab_size")
+        self.architecture: str            = kwargs.parameter("architecture", "causallm")
+        self.model_type: str              = kwargs.parameter("model_type", "transformer")
+        self.vocab_size: int              = kwargs.parameter("vocab_size", 0)
+        self.num_labels: int              = kwargs.parameter("num_labels", 0)
 
         self.n_layer: int                 = kwargs.parameter("n_layer", 4)
         self.n_embd: int                  = kwargs.parameter("n_embd", 256)

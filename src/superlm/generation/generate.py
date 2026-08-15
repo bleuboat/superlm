@@ -6,7 +6,6 @@ from torch import Tensor
 from typing import Any
 from collections.abc import Generator
 
-from superlm.tokenizer import Tokenizer
 from superlm.streamer import Streamer
 from superlm.config import ModelConfig, GenerationConfig
 
@@ -29,24 +28,8 @@ __all__ = ["GenerationMixin"]
 
 
 class GenerationMixin(nn.Module):
-    def __init__(
-        self,
-        tokenizer: Tokenizer,
-        config: ModelConfig,
-        generation_config: GenerationConfig,
-    ) -> None:
-        super().__init__()
-
-        self.config = config.copy()
-        self.generation_config = generation_config.copy()
-
-        self.config.vocab_size = tokenizer.vocab_size
-        self.config.bos_token_ix = tokenizer.bos_token_ix
-        self.config.eos_token_ix = tokenizer.eos_token_ix
-        self.config.pad_token_ix = tokenizer.pad_token_ix
-        self.generation_config.bos_token_ix = tokenizer.bos_token_ix
-        self.generation_config.eos_token_ix = tokenizer.eos_token_ix
-        self.generation_config.pad_token_ix = tokenizer.pad_token_ix
+    config: ModelConfig
+    generation_config: GenerationConfig
 
     def _get_generation_config(self, inputs: Tensor, **kwargs: Any) -> GenerationConfig:
         generation_config = self.generation_config.copy()
