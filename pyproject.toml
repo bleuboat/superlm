@@ -20,20 +20,17 @@ dependencies = [
 package-dir = {"" = "src"}
 packages = {find = {where = ["src"]}}
 
-[tool.mypy]
-exclude = ["workspace.py"]
-
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-ignore = [
-    "**/dtypes.py",
-    "**/tests",
-]
+ignore = ["**/dtypes.py", "**/tests"]
+
+[tool.mypy]
+exclude = ["workspace.py"]
 
 [tool.ruff]
 line-length = 120
-exclude = ["tests/", "run/"]
+exclude = ["tests", "run"]
 
 [tool.ruff.lint]
 select = [
@@ -93,7 +90,6 @@ preview = true
 [tool.ruff.lint.pylint]
 max-args = 10
 max-positional-args = 10
-max-returns = 10
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
