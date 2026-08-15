@@ -29,7 +29,12 @@ __all__ = ["GenerationMixin"]
 
 
 class GenerationMixin(nn.Module):
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
+    def __init__(
+        self,
+        tokenizer: Tokenizer,
+        config: ModelConfig,
+        generation_config: GenerationConfig,
+    ) -> None:
         super().__init__()
 
         self.config = config.copy()

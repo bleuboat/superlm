@@ -40,7 +40,11 @@ class Model(nn.Module):
     def __call__(self, input_ids: Tensor, labels: Tensor) -> tuple[Tensor, Tensor]:
         ...
 
-    def __call__(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
+    def __call__(
+        self,
+        input_ids: Tensor,
+        labels: Tensor | None = None,
+    ) -> tuple[Tensor, Tensor | None]:
         return self._wrapped_call_impl(input_ids, labels)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
     @property
@@ -57,7 +61,12 @@ class Model(nn.Module):
 
 
 class CausalLM(Model, GenerationMixin):
-    def __init__(self, tokenizer: Tokenizer, config: ModelConfig, generation_config: GenerationConfig) -> None:
+    def __init__(
+        self,
+        tokenizer: Tokenizer,
+        config: ModelConfig,
+        generation_config: GenerationConfig,
+    ) -> None:
         super().__init__(tokenizer, config, generation_config)
         self.model = auto_model(self.config)
         if not self.config.tie_word_embeddings:
@@ -70,7 +79,11 @@ class CausalLM(Model, GenerationMixin):
         wte = cast(nn.Embedding, self.model.wte)
         return F.linear(input, wte.weight)
 
-    def forward(self, input_ids: Tensor, labels: Tensor | None = None) -> tuple[Tensor, Tensor | None]:
+    def forward(
+        self,
+        input_ids: Tensor,
+        labels: Tensor | None = None,
+    ) -> tuple[Tensor, Tensor | None]:
         x = self.model(input_ids)
         x = self.lm_head(x)
         loss = None

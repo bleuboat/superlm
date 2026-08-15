@@ -60,7 +60,9 @@ class Trainer:
             ),
         )
         self.dataloader_iter = iter(self.dataloader)
-        self.num_steps = (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
+        self.num_steps = (
+            (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
+        )
 
     def train_step(self) -> int:
         self.step += 1
@@ -80,7 +82,11 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+    def train(
+        self,
+        length: int | None = None,
+        steps: Sequence[int] | None = None,
+    ) -> dict[str, torch.Tensor]:
         if self.checkpoint_path.exists():
             self.restart()
         if steps is None:
@@ -105,7 +111,11 @@ class Trainer:
         self.losses.append((self.step, self.smooth_loss))
         time_used = time.time() - self.start_time
         print("----")
-        print(f"iter [{self.step}/{self.num_steps}] | loss: {self.smooth_loss:.6f} | time: {time_used:.6f}s")
+        print(
+            f"iter [{self.step}/{self.num_steps}]", "|",
+            f"loss: {self.smooth_loss:.6f}", "|",
+            f"time: {time_used:.6f}s",
+        )
 
     def sample(self, length: int | None = None) -> None:
         sample_ix = self.model.generate(

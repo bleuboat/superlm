@@ -175,7 +175,9 @@ class WorkSpace:
 
     def config(self, **configs: Any) -> None:
         for k, v in configs.items():
-            for config in (self.model_config, self.generation_config, self.training_config, self.adam_config):
+            for config in (
+                self.model_config, self.generation_config, self.training_config, self.adam_config,
+            ):
                 if k in config:
                     config[k] = v
                     break
@@ -206,7 +208,13 @@ class WorkSpace:
         res = self.model.generate(inputs_tensor, streamer=streamer, **kwargs)
         return self.tokenizer.decode(res)[0]
 
-    def api(self, inputs: str, map: Callable[[str], str] | None = None, **kwargs: Any) -> Generator[str]:
+    def api(
+        self,
+        inputs: str,
+        *,
+        map: Callable[[str], str] | None = None,
+        **kwargs: Any,
+    ) -> Generator[str]:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         for token in self.model.api(inputs_tensor, **kwargs):
@@ -250,18 +258,30 @@ class WorkSpace:
 
     def save(self) -> None:
         self.paths.model_root.mkdir(exist_ok=True)
-        self.paths.vocab.write_text(json.dumps(self.tokenizer.tokens), encoding="utf-8")
-        self.paths.config.write_text(json.dumps(dict(self.model.config), indent=2))
-        self.paths.generation_config.write_text(json.dumps(dict(self.model.generation_config), indent=2))
+        self.paths.vocab.write_text(
+            json.dumps(self.tokenizer.tokens), encoding="utf-8",
+        )
+        self.paths.config.write_text(
+            json.dumps(dict(self.model.config), indent=2),
+        )
+        self.paths.generation_config.write_text(
+            json.dumps(dict(self.model.generation_config), indent=2),
+        )
         save_model(self.model, str(self.paths.model))
 
     def load(self) -> None:
         if self.paths.vocab.exists():
-            self.tokenizer = Tokenizer(json.loads(self.paths.vocab.read_text(encoding="utf-8")))
+            self.tokenizer = Tokenizer(
+                json.loads(self.paths.vocab.read_text(encoding="utf-8")),
+            )
         if self.paths.config.exists():
-            self.model_config = ModelConfig(**json.loads(self.paths.config.read_text()))
+            self.model_config = ModelConfig(
+                **json.loads(self.paths.config.read_text()),
+            )
         if self.paths.generation_config.exists():
-            self.generation_config = GenerationConfig(**json.loads(self.paths.generation_config.read_text()))
+            self.generation_config = GenerationConfig(
+                **json.loads(self.paths.generation_config.read_text()),
+            )
         if self.paths.model.exists():
             load_model(self.model, self.paths.model)
 

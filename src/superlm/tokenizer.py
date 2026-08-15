@@ -29,7 +29,14 @@ class Tokenizer:
         self.eos_token_ix = self.token_to_ix["<EOS>"]
         self.pad_token_ix = self.token_to_ix["<PAD>"]
 
-    def encode(self, contents: Iterable[str], *, special_tokens: Container[str], device: DeviceLikeType) -> Tensor:
+    def encode(
+        self,
+        contents: Iterable[str],
+        *,
+        special_tokens: Container[str] = (),
+        dtype: torch.dtype = torch.long,
+        device: DeviceLikeType,
+    ) -> Tensor:
         tokens_list: list[list[str]] = []
         tokens_length: list[int] = []
         for content in contents:
@@ -53,7 +60,11 @@ class Tokenizer:
                 out.extend([self.pad_token_ix] * (max_length - len(tokens)))
             return out
 
-        return torch.tensor([_encode(tokens) for tokens in tokens_list], dtype=torch.long, device=torch.device(device))
+        return torch.tensor(
+            [_encode(tokens) for tokens in tokens_list],
+            dtype=dtype,
+            device=device,
+        )
 
     def decode(self, contents: Tensor | Iterable[Tensor]) -> list[str]:
         special_tokens = {self.bos_token_ix, self.eos_token_ix, self.pad_token_ix}

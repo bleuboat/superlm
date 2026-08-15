@@ -16,12 +16,17 @@ class SuperlmRotaryEmbedding(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         head_dim = config.n_embd // config.n_head
-        inv_freq = 1.0 / (config.rope_theta ** (torch.arange(0, head_dim, 2, dtype=torch.int64).float() / head_dim))
+        base = config.rope_theta
+        inv_freq = 1.0 / (
+            base ** (torch.arange(0, head_dim, 2, dtype=torch.int64).float() / head_dim)
+        )
         self.register_buffer("inv_freq", inv_freq, persistent=False)
 
     @torch.no_grad()
     def forward(self, x: Tensor, position_ids: Tensor) -> tuple[Tensor, Tensor]:
-        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
+        inv_freq_expanded = (
+            self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
+        )
         position_ids_expanded = position_ids[:, None, :].float()
         freqs = (inv_freq_expanded @ position_ids_expanded).transpose(1, 2)
         emb = torch.cat((freqs, freqs), dim=-1)
@@ -48,8 +53,10 @@ def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
     if n_rep == 1:
         return hidden_states
     n_batch, n_kv_head, n_ctx, n_head_dim = hidden_states.shape
-    hidden_states = hidden_states[:, :, None, :, :].expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
-    return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
+    hidden_states = hidden_states[:, :, None, :, :]
+    hidden_states = hidden_states.expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
+    hidden_states = hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
+    return hidden_states
 
 
 class SuperlmAttention(nn.Module):
@@ -77,7 +84,11 @@ class SuperlmAttention(nn.Module):
         q, k = apply_rotary_pos_emb(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_kv_group), repeat_kv(v, self.n_kv_group)
 
-        y = F.scaled_dot_product_attention(q, k, v, is_causal=True, dropout_p=self.dropout if self.training else 0)
+        y = F.scaled_dot_product_attention(
+            q, k, v,
+            is_causal=True,
+            dropout_p=self.dropout if self.training else 0,
+        )
         y = y.transpose(1, 2).contiguous().view(b, t, c)
 
         y = self.o_proj(y)
