@@ -1,13 +1,15 @@
 import time
 from torch import Tensor
+from abc import ABC, abstractmethod
 
 
-class StoppingCriteria:
+class StoppingCriteria(ABC):
+    @abstractmethod
     def __call__(self, input_ids: Tensor) -> bool:
         raise NotImplementedError
 
 
-class StoppingCriteriaList(list[StoppingCriteria]): # ruff: ignore[subclass-builtin]
+class StoppingCriteriaList(list[StoppingCriteria], StoppingCriteria):
     def __call__(self, input_ids: Tensor) -> bool:
         return any(criteria(input_ids) for criteria in self)
 

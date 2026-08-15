@@ -26,7 +26,12 @@ exclude = ["workspace.py"]
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-exclude = ["tests/", "**/node_modules", "**/__pycache__", "**/.*"]
+exclude = [
+    "tests/",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+]
 
 [tool.ruff]
 line-length = 120

@@ -1,13 +1,15 @@
 import torch
 from torch import Tensor
+from abc import ABC, abstractmethod
 
 
-class LogitsProcessor:
+class LogitsProcessor(ABC):
+    @abstractmethod
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         raise NotImplementedError
 
 
-class LogitsProcessorList(list[LogitsProcessor]): # ruff: ignore[subclass-builtin]
+class LogitsProcessorList(list[LogitsProcessor], LogitsProcessor):
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         for processor in self:
             scores = processor(input_ids, scores)
