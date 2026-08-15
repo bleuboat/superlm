@@ -24,7 +24,7 @@ class TextDataset(Dataset[tuple[Tensor, Tensor]]):
 
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
         i, j = self.indexes[index]
-        inputs  = self.dataset[i, j     : j + self.block_size    ]
+        inputs = self.dataset[i, j : j + self.block_size]
         targets = self.dataset[i, j + 1 : j + self.block_size + 1]
         return inputs, targets
 

@@ -3,17 +3,17 @@ import json
 import torch
 import dotenv
 from pathlib import Path
-from safetensors.torch import save_model, load_model # pyright: ignore[reportUnknownVariableType]
+from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
 
 from torch._prims_common import DeviceLikeType
 from typing import Any, cast
 from collections.abc import Callable, Generator, Sequence
 
-from .config    import *
-from .models    import *
+from .config import *
+from .models import *
 from .tokenizer import *
-from .streamer  import *
-from .trainer   import *
+from .streamer import *
+from .trainer import *
 
 try:
     import matplotlib.pyplot as plt
@@ -160,7 +160,7 @@ class WorkSpace:
         self.paths.model_name = model_name
 
     def copy(self, other: WorkSpace | str) -> WorkSpace:
-        import shutil # ruff: ignore[import-outside-top-level]
+        import shutil  # ruff: ignore[import-outside-top-level]
         if isinstance(other, str):
             other = WorkSpace(other)
         shutil.copytree(other.paths.root, self.paths.root, dirs_exist_ok=True)

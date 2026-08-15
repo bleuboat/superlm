@@ -61,7 +61,7 @@ class SuperlmAttention(nn.Module):
         self.n_kv_head = config.n_kv_head
         self.n_kv_group = config.n_head // config.n_kv_head
         self.dropout = config.dropout
-        self.q_attn = nn.Linear(self.n_embd, self.n_head    * self.n_head_dim, bias=True)
+        self.q_attn = nn.Linear(self.n_embd, self.n_head * self.n_head_dim, bias=True)
         self.k_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
         self.v_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
         self.o_proj = nn.Linear(self.n_head * self.n_head_dim, self.n_embd, bias=False)
@@ -69,7 +69,7 @@ class SuperlmAttention(nn.Module):
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         b, t, c = x.size()
 
-        q = self.q_attn(x).view(b, t, self.n_head,    self.n_head_dim).transpose(1, 2)
+        q = self.q_attn(x).view(b, t, self.n_head, self.n_head_dim).transpose(1, 2)
         k = self.k_attn(x).view(b, t, self.n_kv_head, self.n_head_dim).transpose(1, 2)
         v = self.v_attn(x).view(b, t, self.n_kv_head, self.n_head_dim).transpose(1, 2)
 
@@ -88,9 +88,9 @@ class SuperlmMLP(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
-        self.up   = nn.Linear(config.n_embd, config.n_inner, bias=False)
+        self.up = nn.Linear(config.n_embd, config.n_inner, bias=False)
         self.down = nn.Linear(config.n_inner, config.n_embd, bias=False)
-        self.act  = ACTIVATIONS[config.hidden_act]
+        self.act = ACTIVATIONS[config.hidden_act]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.down(self.act(self.gate(x)) * self.up(x))

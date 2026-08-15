@@ -69,7 +69,7 @@ class Trainer:
         except StopIteration:
             self.dataloader_iter = iter(self.dataloader)
             inputs, targets = next(self.dataloader_iter)
-        inputs  = inputs .to(self.model.device, non_blocking=True)
+        inputs = inputs.to(self.model.device, non_blocking=True)
         targets = targets.to(self.model.device, non_blocking=True)
         _, loss = self.model(inputs, targets)
         (loss / self.accumulation_steps).backward()

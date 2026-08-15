@@ -83,7 +83,6 @@ ignore = [
     "assert",                               # why not: won't use -o mode
     "no-self-use",                          # why not: unified interface
     "non-augmented-assignment",             # why not: unsafe on Tensor
-    "E2",                                   # why not: justify
 ]
 preview = true
 
@@ -98,6 +97,8 @@ max-positional-args = 10
 ]
 "config.py" = [
     "boolean-positional-value-in-call",
+    "multiple-spaces-before-operator",
+    "multiple-spaces-after-keyword",
 ]
 "dtypes.py" = [
     "unused-import",
@@ -105,5 +106,6 @@ max-positional-args = 10
 "workspace.py" = [
     "undefined-local-with-import-star",
     "undefined-local-with-import-star-usage",
+    "multiple-spaces-before-operator",
     "too-many-public-methods",
 ]

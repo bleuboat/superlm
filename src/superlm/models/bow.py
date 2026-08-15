@@ -32,9 +32,9 @@ class MLP(nn.Module):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
-        self.up   = nn.Linear(config.n_embd, config.n_inner, bias=False)
+        self.up = nn.Linear(config.n_embd, config.n_inner, bias=False)
         self.down = nn.Linear(config.n_inner, config.n_embd, bias=False)
-        self.act  = ACTIVATIONS[config.hidden_act]
+        self.act = ACTIVATIONS[config.hidden_act]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.down(self.act(self.gate(x)) * self.up(x))
