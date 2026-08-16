@@ -1,14 +1,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch import Tensor
-from typing import cast
 
-from superlm.generation import GenerationMixin
+from superlm.generation import GenerationArchitecture
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
 
-from .model import Model, register_architecture
+from .model import Architecture, ModelOutput, register_architecture
 from .loss import (
     CausalLMLoss,
     SequenceClassificationLoss,
@@ -24,7 +22,7 @@ __all__ = [
 
 
 @register_architecture
-class CausalLM(Model, GenerationMixin):
+class CausalLM(GenerationArchitecture):
     def __init__(
         self,
         tokenizer: Tokenizer,
@@ -37,26 +35,37 @@ class CausalLM(Model, GenerationMixin):
         self.loss_function = CausalLMLoss(self.config)
 
     def lm_head(self, input: Tensor) -> Tensor:
-        if not self.config.tie_word_embeddings:
-            return self._lm_head(input)
-        wte = cast(nn.Embedding, self.model.wte)
-        return F.linear(input, wte.weight)
+        if self.config.tie_word_embeddings:
+            return F.linear(input, self.model.wte.weight)
+        return self._lm_head(input)
 
     def forward(
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
-    ) -> tuple[Tensor, Tensor | None]:
-        hidden_states = self.model(input_ids)
-        logits = self.lm_head(hidden_states)
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        outputs = self.model(
+            input_ids=input_ids,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )
+        logits = self.lm_head(outputs.logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
-        return logits, loss
+        return ModelOutput(
+            logits=logits,
+            loss=loss,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
 
 
 @register_architecture
-class SequenceClassification(Model):
+class SequenceClassification(Architecture):
     def __init__(
         self,
         tokenizer: Tokenizer,
@@ -71,17 +80,29 @@ class SequenceClassification(Model):
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
-    ) -> tuple[Tensor, Tensor | None]:
-        hidden_states = self.model(input_ids)
-        logits = self.score(hidden_states)
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        outputs = self.model(
+            input_ids=input_ids,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )
+        logits = self.score(outputs.logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
-        return logits, loss
+        return ModelOutput(
+            logits=logits,
+            loss=loss,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
 
 
 @register_architecture
-class TokenClassification(Model):
+class TokenClassification(Architecture):
     def __init__(
         self,
         tokenizer: Tokenizer,
@@ -96,10 +117,22 @@ class TokenClassification(Model):
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
-    ) -> tuple[Tensor, Tensor | None]:
-        hidden_states = self.model(input_ids)
-        logits = self.score(hidden_states)
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        outputs = self.model(
+            input_ids=input_ids,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )
+        logits = self.score(outputs.logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
-        return logits, loss
+        return ModelOutput(
+            logits=logits,
+            loss=loss,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )

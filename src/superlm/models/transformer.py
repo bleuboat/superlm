@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import register_model
+from superlm.utils import ModelOutput, Model, register_model
 
 
 __all__ = ["SuperlmModel"]
@@ -12,6 +13,7 @@ __all__ = ["SuperlmModel"]
 
 class SuperlmRotaryEmbedding(nn.Module):
     inv_freq: Tensor
+    __call__: Callable[[Tensor, Tensor], tuple[Tensor, Tensor]]
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
@@ -60,6 +62,8 @@ def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
 
 
 class SuperlmAttention(nn.Module):
+    __call__: Callable[[Tensor, tuple[Tensor, Tensor]], Tensor]
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.n_embd = config.n_embd
@@ -96,6 +100,8 @@ class SuperlmAttention(nn.Module):
 
 
 class SuperlmMLP(nn.Module):
+    __call__: Callable[[Tensor], Tensor]
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
@@ -108,6 +114,8 @@ class SuperlmMLP(nn.Module):
 
 
 class SuperlmLayer(nn.Module):
+    __call__: Callable[[Tensor, tuple[Tensor, Tensor]], tuple[Tensor, Tensor]]
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
@@ -115,14 +123,20 @@ class SuperlmLayer(nn.Module):
         self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
         self.ffnf = SuperlmMLP(config)
 
-    def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
-        x = x + self.attn(self.ln_1(x), pos_emb)
+    def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> tuple[Tensor, Tensor]:
+        attn = self.attn(self.ln_1(x), pos_emb)
+        x = x + attn
         x = x + self.ffnf(self.ln_2(x))
-        return x
+        return x, attn
 
 
 @register_model
-class SuperlmModel(nn.Module):
+class SuperlmModel(Model):
+    wte: nn.Embedding
+    wpe: SuperlmRotaryEmbedding
+    layers: nn.ModuleList[SuperlmLayer]
+    ln_f: nn.RMSNorm
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
@@ -130,12 +144,40 @@ class SuperlmModel(nn.Module):
         self.layers = nn.ModuleList([SuperlmLayer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
 
-    def forward(self, idx: Tensor) -> Tensor:
-        pos = torch.arange(0, idx.size()[1], device=idx.device).unsqueeze(0)
-        tok_emb = self.wte(idx)
-        pos_emb = self.wpe(idx, pos)
-        x = tok_emb
+    def forward(
+        self,
+        input_ids: Tensor,
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        pos = torch.arange(input_ids.size()[1], device=input_ids.device).unsqueeze(0)
+        tok_emb = self.wte(input_ids)
+        pos_emb = self.wpe(input_ids, pos)
+        hidden_state = tok_emb
+
+        all_hidden_states: list[Tensor] = []
+        all_attentions: list[Tensor] = []
+        hidden_states = None
+        attentions = None
+
         for layer in self.layers:
-            x = layer(x, pos_emb)
-        x = self.ln_f(x)
-        return x
+            if output_hidden_states:
+                all_hidden_states.append(hidden_state)
+            hidden_state, attention = layer(hidden_state, pos_emb)
+            if output_attentions:
+                all_attentions.append(attention)
+
+        if output_hidden_states:
+            all_hidden_states.append(hidden_state)
+            hidden_states = tuple(all_hidden_states)
+
+        if output_attentions:
+            attentions = tuple(all_attentions)
+
+        logits = self.ln_f(hidden_state)
+        return ModelOutput(
+            logits=logits,
+            hidden_states=hidden_states,
+            attentions=attentions,
+        )

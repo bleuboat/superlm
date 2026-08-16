@@ -2,21 +2,23 @@ import torch
 import torch.nn as nn
 
 from torch import Tensor
-from typing import overload
+from dataclasses import dataclass
 
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
 
 
 __all__ = [
+    "ModelOutput",
     "Model",
+    "Architecture",
     "auto_model",
     "register_model",
     "register_architecture",
 ]
 
-MODEL_CLASSES: dict[str, type[nn.Module]] = {}
-ARCHITECTURE_CLASSES: dict[str, type[Model]] = {}
+MODEL_CLASSES: dict[str, type[Model]] = {}
+ARCHITECTURE_CLASSES: dict[str, type[Architecture]] = {}
 
 
 def auto_model(
@@ -24,20 +26,45 @@ def auto_model(
     config: ModelConfig,
     generation_config: GenerationConfig,
 ) -> Model:
-    return ARCHITECTURE_CLASSES[config.architecture](tokenizer, config, generation_config)
+    return MODEL_CLASSES[config.architecture](tokenizer, config, generation_config)
 
 
-def register_model[T: type[nn.Module]](model_class: T) -> T:
+def register_model[T: type[Model]](model_class: T) -> T:
     MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
     return model_class
 
 
-def register_architecture[T: type[Model]](architecture_class: T) -> T:
+def register_architecture[T: type[Architecture]](architecture_class: T) -> T:
     ARCHITECTURE_CLASSES[architecture_class.__name__.lower()] = architecture_class
     return architecture_class
 
 
+@dataclass
+class ModelOutput:
+    logits: Tensor
+    loss: Tensor | None = None
+    hidden_states: tuple[Tensor, ...] | None = None
+    attentions: tuple[Tensor, ...] | None = None
+
+
 class Model(nn.Module):
+    wte: nn.Embedding
+
+    def __call__(
+        self,
+        input_ids: Tensor,
+        *,
+        output_hidden_states: bool,
+        output_attentions: bool,
+    ) -> ModelOutput:
+        return self._wrapped_call_impl(
+            input_ids=input_ids,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )  # pyright: ignore
+
+
+class Architecture(nn.Module):
     def __init__(
         self,
         tokenizer: Tokenizer,
@@ -59,20 +86,20 @@ class Model(nn.Module):
 
         self.model = MODEL_CLASSES[self.config.model_type](self.config)
 
-    @overload
-    def __call__(self, input_ids: Tensor) -> tuple[Tensor, None]:
-        ...
-
-    @overload
-    def __call__(self, input_ids: Tensor, labels: Tensor) -> tuple[Tensor, Tensor]:
-        ...
-
     def __call__(
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
-    ) -> tuple[Tensor, Tensor | None]:
-        return self._wrapped_call_impl(input_ids, labels)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        return self._wrapped_call_impl(
+            input_ids=input_ids,
+            labels=labels,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )  # pyright: ignore
 
     @property
     def num_parameters(self) -> int:

@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import register_model
+from superlm.utils import ModelOutput, Model, register_model
 
 
 __all__ = ["BoW"]
@@ -12,6 +13,7 @@ __all__ = ["BoW"]
 
 class CausalBoW(nn.Module):
     bias: Tensor
+    __call__: Callable[[Tensor], Tensor]
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
@@ -29,6 +31,8 @@ class CausalBoW(nn.Module):
 
 
 class MLP(nn.Module):
+    __call__: Callable[[Tensor], Tensor]
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.gate = nn.Linear(config.n_embd, config.n_inner, bias=False)
@@ -40,7 +44,9 @@ class MLP(nn.Module):
         return self.down(self.act(self.gate(x)) * self.up(x))
 
 
-class Block(nn.Module):
+class Layer(nn.Module):
+    __call__: Callable[[Tensor], Tensor]
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
@@ -55,20 +61,45 @@ class Block(nn.Module):
 
 
 @register_model
-class BoW(nn.Module):
+class BoW(Model):
+    wte: nn.Embedding
+    wpe: nn.Embedding
+    layers: nn.ModuleList[Layer]
+    ln_f: nn.RMSNorm
+
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
         self.wpe = nn.Embedding(config.block_size, config.n_embd)
-        self.h = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
+        self.layers = nn.ModuleList([Layer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
 
-    def forward(self, idx: Tensor) -> Tensor:
-        pos = torch.arange(0, idx.size()[1], dtype=torch.long, device=idx.device).unsqueeze(0)
-        tok_emb = self.wte(idx)
+    def forward(
+        self,
+        input_ids: Tensor,
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        pos = torch.arange(input_ids.size()[1], device=input_ids.device).unsqueeze(0)
+        tok_emb = self.wte(input_ids)
         pos_emb = self.wpe(pos)
-        x = tok_emb + pos_emb
-        for block in self.h:
-            x = block(x)
-        x = self.ln_f(x)
-        return x
+        hidden_state = tok_emb + pos_emb
+
+        all_hidden_states: list[Tensor] = []
+        hidden_states = None
+
+        for layer in self.layers:
+            if output_hidden_states:
+                all_hidden_states.append(hidden_state)
+            hidden_state = layer(hidden_state)
+
+        if output_hidden_states:
+            all_hidden_states.append(hidden_state)
+            hidden_states = tuple(all_hidden_states)
+
+        logits = self.ln_f(hidden_state)
+        return ModelOutput(
+            logits=logits,
+            hidden_states=hidden_states,
+        )

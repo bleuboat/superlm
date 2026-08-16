@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 from torch import Tensor
@@ -7,7 +6,8 @@ from typing import Any
 from collections.abc import Generator
 
 from superlm.streamer import Streamer
-from superlm.config import ModelConfig, GenerationConfig
+from superlm.config import GenerationConfig
+from superlm.utils import Architecture
 
 from .logits_process import (
     LogitsProcessorList,
@@ -24,13 +24,10 @@ from .stopping_criteria import (
 )
 
 
-__all__ = ["GenerationMixin"]
+__all__ = ["GenerationArchitecture"]
 
 
-class GenerationMixin(nn.Module):
-    config: ModelConfig
-    generation_config: GenerationConfig
-
+class GenerationArchitecture(Architecture):
     def _get_generation_config(self, inputs: Tensor, **kwargs: Any) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
@@ -73,8 +70,8 @@ class GenerationMixin(nn.Module):
         do_sample = generation_config.do_sample
         unfinished = True
         while unfinished:
-            outputs, _ = self(inputs)
-            logits = outputs[:, -1, :]
+            outputs = self(inputs)
+            logits = outputs.logits[:, -1, :]
             score = processors(inputs, logits)
             if do_sample:
                 probs = F.softmax(score, dim=-1)
@@ -99,7 +96,7 @@ class GenerationMixin(nn.Module):
         unfinished = True
         while unfinished:
             outputs = self(inputs)
-            logits = outputs[:, -1, :]
+            logits = outputs.logits[:, -1, :]
             score = processors(inputs, logits)
             if do_sample:
                 probs = F.softmax(score, dim=-1)

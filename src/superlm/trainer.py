@@ -1,7 +1,6 @@
 import math
 import time
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from pathlib import Path
@@ -42,8 +41,6 @@ class Trainer:
         self.start_time = 0.0
         self.losses: list[tuple[int, float]] = []
 
-        ignore_index = tokenizer.pad_token_ix
-        self.criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)
         self.optimizer = optim.AdamW(model.parameters(), **adam_config)
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self._lr_lambda)
         self.optimizer.zero_grad()
@@ -73,7 +70,8 @@ class Trainer:
             inputs, targets = next(self.dataloader_iter)
         inputs = inputs.to(self.model.device, non_blocking=True)
         targets = targets.to(self.model.device, non_blocking=True)
-        _, loss = self.model(inputs, targets)
+        outputs = self.model(inputs, targets)
+        loss = cast(torch.Tensor, outputs.loss)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
         if self.step % self.accumulation_steps == 0:
