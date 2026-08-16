@@ -115,10 +115,13 @@ class Config(MutableMapping[str, Any]):
 
 class ModelConfig(Config):
     def check(self) -> None:
-        if self.model_type == "transformer":
-            assert self.n_embd % self.n_head == 0, \
-                f"embed_dim must be divisible by num_heads, got {self.n_embd} and {self.n_head}"
-        assert self.hidden_act in ACTIVATIONS, f"unknown hidden activation '{self.hidden_act}'"
+        message = None
+        if self.model_type == "transformer" and self.n_embd % self.n_head != 0:
+            message = f"n_embd must be divisible by n_head, got {self.n_embd} and {self.n_head}"
+        if self.hidden_act not in ACTIVATIONS:
+            message = f"unknown hidden activation '{self.hidden_act}'"
+        if message:
+            raise ValueError(message)
 
     def init(self, kwargs: Kwargs) -> None:
         self.architecture: str            = kwargs.parameter("architecture", "causallm")

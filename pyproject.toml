@@ -80,7 +80,6 @@ ignore = [
     "manual-from-import",                   # why not: `import torch.nn as nn`
     "unnecessary-assign",                   # why not: justify
     "unsorted-dunder-all",                  # why not: sorted by category
-    "assert",                               # why not: won't use -o mode
     "no-self-use",                          # why not: unified interface
     "non-augmented-assignment",             # why not: unsafe on Tensor
 ]
