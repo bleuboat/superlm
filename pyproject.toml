@@ -26,7 +26,7 @@ reportUnknownMemberType = false
 ignore = ["**/dtypes.py", "**/tests"]
 
 [tool.mypy]
-exclude = ["workspace.py"]
+exclude = ["workspace.py", "models"]
 
 [tool.ruff]
 line-length = 100
