@@ -23,7 +23,7 @@ packages = {find = {where = ["src"]}}
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-ignore = ["**/dtypes.py", "**/tests"]
+ignore = ["**/dtypes.py"]
 
 [tool.mypy]
 exclude = ["workspace.py", "models"]
@@ -31,7 +31,6 @@ exclude = ["workspace.py", "models"]
 [tool.ruff]
 line-length = 100
 src = ["src"]
-exclude = ["tests", "run"]
 
 [tool.ruff.lint]
 select = [
@@ -76,13 +75,15 @@ select = [
     "W",
 ]
 ignore = [
-    "any-type",                             # why not: sometimes we need
-    "lowercase-imported-as-non-lowercase",  # why not: `import torch.nn.functional as F`
-    "manual-from-import",                   # why not: `import torch.nn as nn`
-    "unnecessary-assign",                   # why not: justify
-    "unsorted-dunder-all",                  # why not: sorted by category
-    "no-self-use",                          # why not: unified interface
-    "non-augmented-assignment",             # why not: unsafe on Tensor
+    "any-type",                                # why not: sometimes we need
+    "lowercase-imported-as-non-lowercase",     # why not: `import torch.nn.functional as F`
+    "manual-from-import",                      # why not: `import torch.nn as nn`
+    "unnecessary-assign",                      # why not: justify
+    "unsorted-dunder-all",                     # why not: sorted by category
+    "no-self-use",                             # why not: unified interface
+    "non-augmented-assignment",                # why not: unsafe on Tensor
+    "undefined-local-with-import-star",        # why not: `from ... import *`
+    "undefined-local-with-import-star-usage",  # why not: `from ... import *`
 ]
 preview = true
 
@@ -91,10 +92,6 @@ max-args = 10
 max-positional-args = 10
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = [
-    "undefined-local-with-import-star",
-    "undefined-local-with-import-star-usage",
-]
 "config.py" = [
     "boolean-positional-value-in-call",
     "multiple-spaces-before-operator",
@@ -104,8 +101,12 @@ max-positional-args = 10
     "unused-import",
 ]
 "workspace.py" = [
-    "undefined-local-with-import-star",
-    "undefined-local-with-import-star-usage",
     "multiple-spaces-before-operator",
     "too-many-public-methods",
+]
+"run/*.py" = [
+    "implicit-namespace-package",
+]
+"test/*.py" = [
+    "implicit-namespace-package",
 ]
