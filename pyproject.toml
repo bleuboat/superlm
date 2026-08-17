@@ -30,6 +30,7 @@ exclude = ["workspace.py", "models"]
 
 [tool.ruff]
 line-length = 100
+src = ["src"]
 exclude = ["tests", "run"]
 
 [tool.ruff.lint]

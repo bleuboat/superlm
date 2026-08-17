@@ -72,10 +72,10 @@ class SuperlmAttention(nn.Module):
         self.n_kv_head = config.n_kv_head
         self.n_kv_group = config.n_head // config.n_kv_head
         self.dropout = config.dropout
-        self.q_attn = nn.Linear(self.n_embd, self.n_head * self.n_head_dim, bias=True)
-        self.k_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
-        self.v_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=True)
-        self.o_proj = nn.Linear(self.n_head * self.n_head_dim, self.n_embd, bias=False)
+        self.q_attn = nn.Linear(self.n_embd, self.n_head * self.n_head_dim, bias=config.bias)
+        self.k_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=config.bias)
+        self.v_attn = nn.Linear(self.n_embd, self.n_kv_head * self.n_head_dim, bias=config.bias)
+        self.o_proj = nn.Linear(self.n_head * self.n_head_dim, self.n_embd, bias=config.bias)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> Tensor:
         b, t, c = x.size()

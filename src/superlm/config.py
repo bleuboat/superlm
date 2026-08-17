@@ -137,6 +137,7 @@ class ModelConfig(Config):
         self.block_size: int              = kwargs.parameter("block_size", 1024)
         self.rope_theta: int              = kwargs.parameter("rope_theta", 10000)
         self.dropout: float               = kwargs.parameter("dropout", 0.1)
+        self.bias: bool                   = kwargs.parameter("bias", False)
         self.eps: float                   = kwargs.parameter("eps", 1e-8)
         self.hidden_act: str              = kwargs.parameter("hidden_act", "silu")
         self.tie_word_embeddings: bool    = kwargs.parameter("tie_word_embeddings", False)
