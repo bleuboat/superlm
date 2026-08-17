@@ -36,6 +36,7 @@ class Paths:
     def __init__(self, space_name: str, model_name: str = "model") -> None:
         self.space_name = space_name
         self.model_name = model_name
+        self.root = WORKSPACE_PATH / self.space_name
 
     def __setattr__(self, name: str, value: Any) -> None:
         super().__setattr__(name, value)
@@ -43,20 +44,18 @@ class Paths:
             self._get_paths()
 
     def _get_paths(self) -> None:
-        root = WORKSPACE_PATH
-        space = self.space_name
+        root = self.root
         input = "inputs"
         model = f"models--{self.model_name}"
 
-        self.root              = root / space
-        self.inputs            = root / space / input
-        self.model_root        = root / space / model
-        self.checkpoint        = root / space / model / "checkpoint.pth"
-        self.config            = root / space / model / "config.json"
-        self.generation_config = root / space / model / "generation-config.json"
-        self.loss              = root / space / model / "loss.png"
-        self.model             = root / space / model / "model.safetensors"
-        self.vocab             = root / space / model / "vocab.json"
+        self.inputs            = root / input
+        self.model_root        = root / model
+        self.checkpoint        = root / model / "checkpoint.pth"
+        self.config            = root / model / "config.json"
+        self.generation_config = root / model / "generation-config.json"
+        self.loss              = root / model / "loss.png"
+        self.model             = root / model / "model.safetensors"
+        self.vocab             = root / model / "vocab.json"
 
 
 class WorkSpace:
