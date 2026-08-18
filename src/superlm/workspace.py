@@ -34,9 +34,9 @@ WORKSPACE_PATH = Path(path)
 
 class Paths:
     def __init__(self, space_name: str, model_name: str = "model") -> None:
+        self.root = WORKSPACE_PATH / space_name
         self.space_name = space_name
         self.model_name = model_name
-        self.root = WORKSPACE_PATH / self.space_name
 
     def __setattr__(self, name: str, value: Any) -> None:
         super().__setattr__(name, value)

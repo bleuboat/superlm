@@ -1,0 +1,63 @@
+ModelConfig:
+    !check self.model_type == "transformer" and self.n_embd % self.n_head != 0
+    n_embd must be divisible by n_head, got {self.n_embd} and {self.n_head}
+
+    !check self.hidden_act not in ACTIVATIONS
+    unknown hidden activation '{self.hidden_act}'
+
+    architecture: str            = "causallm"
+    model_type: str              = "transformer"
+    vocab_size: int              = 0
+    num_labels: int              = 0
+
+    n_layer: int                 = 4
+    n_embd: int                  = 256
+    n_inner: int                 = lambda: self.n_embd * 4
+    n_head: int                  = lambda: self.n_embd // 64
+    n_kv_head: int               = lambda: self.n_head
+    block_size: int              = 1024
+    rope_theta: int              = 10000
+    dropout: float               = 0.1
+    bias: bool                   = False
+    eps: float                   = 1e-8
+    hidden_act: str              = "silu"
+    tie_word_embeddings: bool    = False
+
+    pad_token_ix: int | None     = None
+    bos_token_ix: int | None     = None
+    eos_token_ix: int | None     = None
+
+
+GenerationConfig:
+    max_length: int | None       = 512
+    max_new_tokens: int | None   = None
+    max_time: int | float | None = None
+
+    do_sample: bool              = True
+    temperature: float           = 1.0
+    top_k: int                   = 50
+    top_p: float                 = 1.0
+    repetition_penalty: float    = 1.0
+
+    pad_token_ix: int | None     = None
+    bos_token_ix: int | None     = None
+    eos_token_ix: int | None     = None
+
+
+TrainingConfig:
+    epochs: int                  = 1
+    batch_size: int              = 1
+    accumulation_steps: int      = 1
+
+
+AdamConfig:
+    lr: float                    = 1e-3
+    betas: tuple[float, float]   = (0.9, 0.999)
+    eps: float                   = 1e-8
+    weight_decay: float          = 0.01
+    amsgrad: bool                = False
+    maximize: bool               = False
+    foreach: bool | None         = None
+    capturable: bool             = False
+    differentiable: bool         = False
+    fused: bool | None           = None

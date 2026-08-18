@@ -23,7 +23,7 @@ packages = {find = {where = ["src"]}}
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-ignore = ["**/dtypes.py"]
+ignore = ["**/dtypes.py", "build/__main__.py"]
 
 [tool.mypy]
 exclude = ["workspace.py", "models"]
@@ -92,11 +92,6 @@ max-args = 10
 max-positional-args = 10
 
 [tool.ruff.lint.per-file-ignores]
-"config.py" = [
-    "boolean-positional-value-in-call",
-    "multiple-spaces-before-operator",
-    "multiple-spaces-after-keyword",
-]
 "dtypes.py" = [
     "unused-import",
 ]
@@ -109,4 +104,7 @@ max-positional-args = 10
 ]
 "test/*.py" = [
     "implicit-namespace-package",
+]
+"build/__main__.py" = [
+    "unused-import",
 ]
