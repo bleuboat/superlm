@@ -119,8 +119,7 @@ if TYPE_CHECKING:
 
 else:
     from .activations import ACTIVATIONS
-    from types import GenericAlias
-    from typing import Any, Self, get_origin
+    from typing import Any, Self
     from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
     class Parameter:
@@ -128,10 +127,7 @@ else:
 
         def __init__(self, value: Any, annotation: type, default: Any) -> None:
             self.value = value
-            if isinstance(annotation, GenericAlias):
-                self.annotation = get_origin(annotation)
-            else:
-                self.annotation = annotation
+            self.annotation = annotation
             if callable(default):
                 self.default = default
             else:
@@ -214,7 +210,8 @@ else:
             for name, param in self._data.items():
                 if not isinstance(param.get(), param.annotation):
                     err.append(TypeError(
-                        f"'{name}' must be a {param.annotation.__name__}, got {type(param.get())}",
+                        f"'{name}' must be a {param.annotation.__name__}, "
+                        f"got {type(param.get()).__name__}",
                     ))
 
         def check_extras(self, err: list[Exception]) -> None:
@@ -224,8 +221,10 @@ else:
             err: list[Exception] = []
             self.check_params(err)
             self.check_extras(err)
+            if len(err) == 1:
+                raise err[0]
             if err:
-                raise ExceptionGroup("Error:", err)
+                raise ExceptionGroup("ConfigError", err)
 
         def copy(self: Self) -> Self:
             return type(self)(**self)
@@ -300,7 +299,7 @@ else:
     class AdamConfig(Config):
         def init(self, kwargs: Kwargs) -> None:
             self.lr = kwargs.param("lr", float, default=1e-3)
-            self.betas = kwargs.param("betas", tuple[float, float], default=(0.9, 0.999))
+            self.betas = kwargs.param("betas", tuple, default=(0.9, 0.999))
             self.eps = kwargs.param("eps", float, default=1e-8)
             self.weight_decay = kwargs.param("weight_decay", float, default=0.01)
             self.amsgrad = kwargs.param("amsgrad", bool, default=False)

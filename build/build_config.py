@@ -3,8 +3,7 @@ import re
 
 
 code = """from .activations import ACTIVATIONS
-from types import GenericAlias
-from typing import Any, Self, get_origin
+from typing import Any, Self
 from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
 class Parameter:
@@ -12,10 +11,7 @@ class Parameter:
 
     def __init__(self, value: Any, annotation: type, default: Any) -> None:
         self.value = value
-        if isinstance(annotation, GenericAlias):
-            self.annotation = get_origin(annotation)
-        else:
-            self.annotation = annotation
+        self.annotation = annotation
         if callable(default):
             self.default = default
         else:
@@ -98,7 +94,8 @@ class Config(MutableMapping[str, Any]):
         for name, param in self._data.items():
             if not isinstance(param.get(), param.annotation):
                 err.append(TypeError(
-                    f"'{name}' must be a {param.annotation.__name__}, got {type(param.get())}",
+                    f"'{name}' must be a {param.annotation.__name__}, "
+                    f"got {type(param.get()).__name__}",
                 ))
 
     def check_extras(self, err: list[Exception]) -> None:
@@ -108,8 +105,10 @@ class Config(MutableMapping[str, Any]):
         err: list[Exception] = []
         self.check_params(err)
         self.check_extras(err)
+        if len(err) == 1:
+            raise err[0]
         if err:
-            raise ExceptionGroup("Error:", err)
+            raise ExceptionGroup("ConfigError", err)
 
     def copy(self: Self) -> Self:
         return type(self)(**self)
@@ -229,8 +228,9 @@ for config, data in configs.items():
     code += f"\nclass {config}(Config):\n"
     code += "    def init(self, kwargs: Kwargs) -> None:\n"
     for name, annotation, default in data[1]:
+        origin = re.sub(r"\[.*?\]", "", annotation)
         code += (
-            f'        self.{name} = kwargs.param("{name}", {annotation}, default={default})\n'
+            f'        self.{name} = kwargs.param("{name}", {origin}, default={default})\n'
         )
     if data[0]:
         code += "\n    def check_extras(self, err: list[Exception]) -> None:\n"
