@@ -99,10 +99,7 @@ max-positional-args = 10
     "multiple-spaces-before-operator",
     "too-many-public-methods",
 ]
-"run/*.py" = [
-    "implicit-namespace-package",
-]
-"test/*.py" = [
+"{run,test}/*.py" = [
     "implicit-namespace-package",
 ]
 "build/__main__.py" = [
