@@ -7,4 +7,5 @@ superlm.egg-info/
 .env
 __pycache__/
 src/superlm/config.py
+src/superlm/dtypes.py
 src/superlm/version.py
