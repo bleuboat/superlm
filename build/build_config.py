@@ -138,6 +138,7 @@ class Config(MutableMapping[str, Any]):
     _data: dict[str, Any]
 
     def __init__(self, **kwargs: Any) -> None:
+        super().__setattr__("_data", {})
         super().__init__(**kwargs)
 
     def __setitem__(self, key: str, value: Any) -> None:
