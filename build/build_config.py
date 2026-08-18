@@ -3,7 +3,7 @@ import re
 
 
 code = """from .activations import ACTIVATIONS
-from typing import Any, Self
+from typing import Any, Never, Self
 from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
 class Parameter:
@@ -69,7 +69,7 @@ class Config(MutableMapping[str, Any]):
     def __setattr__(self, key: str, value: Any) -> None:
         self[key] = value
 
-    def __getattr__(self, key: str) -> Any:
+    def __getattr__(self, key: str) -> Never:
         return self[key]
 
     def __len__(self) -> int:
@@ -131,7 +131,7 @@ class Config(MutableMapping[str, Any]):
 
 
 typing = """from dataclasses import dataclass
-from typing import Any, Self
+from typing import Any, Never, Self
 from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
 class Config(MutableMapping[str, Any]):
@@ -147,7 +147,7 @@ class Config(MutableMapping[str, Any]):
     def __getitem__(self, key: str) -> Any:
         return self._data[key]
 
-    def __delitem__(self, key: str) -> Any:
+    def __delitem__(self, key: str) -> Never:
         raise NotImplementedError("don't delete config's items")
 
     def __setattr__(self, key: str, value: Any) -> None:
