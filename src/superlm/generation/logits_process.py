@@ -21,8 +21,7 @@ class TemperatureLogitsWarper(LogitsProcessor):
         self.temperature = temperature
 
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
-        scores_processed = scores / self.temperature
-        return scores_processed
+        return scores / self.temperature
 
 
 class RepetitionPenaltyLogitsProcessor(LogitsProcessor):
@@ -32,8 +31,7 @@ class RepetitionPenaltyLogitsProcessor(LogitsProcessor):
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         score = torch.gather(scores, 1, input_ids)
         score = torch.where(score < 0, score * self.penalty, score / self.penalty)
-        scores_processed = scores.scatter(1, input_ids, score)
-        return scores_processed
+        return scores.scatter(1, input_ids, score)
 
 
 class TopPLogitsWarper(LogitsProcessor):
@@ -47,8 +45,7 @@ class TopPLogitsWarper(LogitsProcessor):
         indices_to_remove = cumulative_probs <= (1 - self.top_p)
         indices_to_remove[..., -self.min_tokens_to_keep:] = 0
         indices_to_remove = indices_to_remove.scatter(1, indices, indices_to_remove)
-        scores_processed = scores.masked_fill(indices_to_remove, -float("Inf"))
-        return scores_processed
+        return scores.masked_fill(indices_to_remove, -float("inf"))
 
 
 class TopKLogitsWarper(LogitsProcessor):
@@ -58,5 +55,4 @@ class TopKLogitsWarper(LogitsProcessor):
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         top_k = min(self.top_k, scores.size(-1))
         indices_to_remove = scores < torch.topk(scores, top_k)[0][..., -1, None]
-        scores_processed = scores.masked_fill(indices_to_remove, -float("Inf"))
-        return scores_processed
+        return scores.masked_fill(indices_to_remove, -float("inf"))
