@@ -204,11 +204,11 @@ with file_txt.open() as f:
     while (line := f.readline()):
         if line == "\n":
             continue
-        line = line[:-1]
-        line = re.sub(r" +", " ", line)
         if line[0] == "$":
             last_config = None
             continue
+        line = line[:-1]
+        line = re.sub(r" +", " ", line)
         if line[0] != " ":
             name = line[:-1]
             configs[name] = ([], [])
