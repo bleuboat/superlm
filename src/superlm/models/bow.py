@@ -56,8 +56,7 @@ class Layer(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         x = x + self.cbow(self.ln_1(x))
-        x = x + self.ffnf(self.ln_2(x))
-        return x
+        return x + self.ffnf(self.ln_2(x))
 
 
 @register_model

@@ -1,14 +1,12 @@
-import os
 import json
 import torch
-import dotenv
-from pathlib import Path
 from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
 
 from torch._prims_common import DeviceLikeType
 from typing import Any, cast
 from collections.abc import Callable, Generator, Sequence
 
+from .paths import *
 from .config import *
 from .models import *
 from .tokenizer import *
@@ -22,40 +20,6 @@ except ModuleNotFoundError:
 
 
 __all__ = ["WorkSpace"]
-
-
-dotenv.load_dotenv()
-path = os.getenv("WORKSPACE_PATH")
-if path is None:
-    path = "workspace"
-    dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
-WORKSPACE_PATH = Path(path)
-
-
-class Paths:
-    def __init__(self, space_name: str, model_name: str = "model") -> None:
-        self.root = WORKSPACE_PATH / space_name
-        self.space_name = space_name
-        self.model_name = model_name
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        super().__setattr__(name, value)
-        if name == "model_name":
-            self._get_paths()
-
-    def _get_paths(self) -> None:
-        root = self.root
-        input = "inputs"
-        model = f"models--{self.model_name}"
-
-        self.inputs            = root / input
-        self.model_root        = root / model
-        self.checkpoint        = root / model / "checkpoint.pth"
-        self.config            = root / model / "config.json"
-        self.generation_config = root / model / "generation-config.json"
-        self.loss              = root / model / "loss.png"
-        self.model             = root / model / "model.safetensors"
-        self.vocab             = root / model / "vocab.json"
 
 
 class WorkSpace:

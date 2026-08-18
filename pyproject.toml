@@ -76,7 +76,6 @@ ignore = [
     "any-type",                                # why not: sometimes we need
     "lowercase-imported-as-non-lowercase",     # why not: `import torch.nn.functional as F`
     "manual-from-import",                      # why not: `import torch.nn as nn`
-    "unnecessary-assign",                      # why not: justify
     "unsorted-dunder-all",                     # why not: sorted by category
     "no-self-use",                             # why not: unified interface
     "non-augmented-assignment",                # why not: unsafe on Tensor
@@ -91,7 +90,6 @@ max-positional-args = 10
 
 [tool.ruff.lint.per-file-ignores]
 "workspace.py" = [
-    "multiple-spaces-before-operator",
     "too-many-public-methods",
 ]
 "{run,test}/*.py" = [

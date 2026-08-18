@@ -57,8 +57,7 @@ def repeat_kv(hidden_states: Tensor, n_rep: int) -> Tensor:
     n_batch, n_kv_head, n_ctx, n_head_dim = hidden_states.shape
     hidden_states = hidden_states[:, :, None, :, :]
     hidden_states = hidden_states.expand(n_batch, n_kv_head, n_rep, n_ctx, n_head_dim)
-    hidden_states = hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
-    return hidden_states
+    return hidden_states.reshape(n_batch, n_kv_head * n_rep, n_ctx, n_head_dim)
 
 
 class SuperlmAttention(nn.Module):
@@ -95,8 +94,7 @@ class SuperlmAttention(nn.Module):
         )
         y = y.transpose(1, 2).contiguous().view(b, t, c)
 
-        y = self.o_proj(y)
-        return y
+        return self.o_proj(y)
 
 
 class SuperlmMLP(nn.Module):

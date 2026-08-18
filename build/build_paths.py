@@ -1,0 +1,59 @@
+from pathlib import Path
+import re
+
+
+code = """import os
+import dotenv
+from pathlib import Path
+
+
+__all__ = ["Paths"]
+
+
+dotenv.load_dotenv()
+path = os.getenv("WORKSPACE_PATH")
+if path is None:
+    path = "workspace"
+    dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
+WORKSPACE_PATH = Path(path)
+
+
+class Paths:
+    def __init__(self, space_name: str, model_name: str = "model") -> None:
+        self.root = WORKSPACE_PATH / space_name
+        self.space_name = space_name
+        self.model_name = model_name
+
+    def __setattr__(self, name: str, value: str | Path) -> None:
+        super().__setattr__(name, value)
+        if name == "model_name":
+            self._get_paths()
+
+    def _get_paths(self) -> None:
+        root = self.root
+        input = "inputs"
+        model = f"models--{self.model_name}"
+"""
+
+
+file_txt = Path("src") / "superlm" / ".config"
+file_py = Path("src") / "superlm" / "paths.py"
+paths: list[tuple[str, str]] = []
+
+with file_txt.open() as f:
+    while True:
+        line = f.readline()
+        if line[0] == "$":
+            break
+    while (line := f.readline()):
+        if line == "\n":
+            continue
+        if line[0] != " ":
+            break
+        line = line[:-1]
+        line = re.sub(r" +", " ", line).strip()
+        key, value = line.split(" = ")
+        value = re.sub(r"/ (.*?)$", r'/ "\1"', value, flags=re.MULTILINE)
+        code += f"        self.{key} = root / {value}\n"
+
+file_py.write_text(code)

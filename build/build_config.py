@@ -194,7 +194,7 @@ class Config(MutableMapping[str, Any]):
 """
 
 
-file_txt = Path("src") / "superlm" / "config.txt"
+file_txt = Path("src") / "superlm" / ".config"
 file_py = Path("src") / "superlm" / "config.py"
 
 configs: dict[str, tuple[list[tuple[str, str]], list[tuple[str, str, str]]]] = {}
@@ -206,13 +206,16 @@ with file_txt.open() as f:
             continue
         line = line[:-1]
         line = re.sub(r" +", " ", line)
+        if line[0] == "$":
+            last_config = None
+            continue
         if line[0] != " ":
             name = line[:-1]
             configs[name] = ([], [])
             last_config = configs[name]
             continue
         if not last_config:
-            raise RuntimeError
+            continue
         line = line[1:]
         if line.startswith("!check"):
             last_config[0].append((
