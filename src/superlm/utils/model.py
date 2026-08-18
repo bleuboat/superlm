@@ -41,7 +41,7 @@ def register_architecture[T: type[Architecture]](architecture_class: T) -> T:
 
 @dataclass
 class ModelOutput:
-    logits: Tensor
+    logits: Tensor | None = None
     loss: Tensor | None = None
     hidden_states: tuple[Tensor, ...] | None = None
     attentions: tuple[Tensor, ...] | None = None

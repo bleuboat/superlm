@@ -1,6 +1,6 @@
 import torch.nn as nn
-import torch.nn.functional as F
 from torch import Tensor
+from typing import cast
 
 from superlm.generation import GenerationArchitecture
 from superlm.tokenizer import Tokenizer
@@ -30,14 +30,10 @@ class CausalLM(GenerationArchitecture):
         generation_config: GenerationConfig,
     ) -> None:
         super().__init__(tokenizer, config, generation_config)
-        if not self.config.tie_word_embeddings:
-            self._lm_head = nn.Linear(self.config.n_embd, self.config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(self.config.n_embd, self.config.vocab_size, bias=False)
         self.loss_function = CausalLMLoss(self.config)
-
-    def lm_head(self, input: Tensor) -> Tensor:
         if self.config.tie_word_embeddings:
-            return F.linear(input, self.model.wte.weight)
-        return self._lm_head(input)
+            self.lm_head.weight = self.model.wte.weight
 
     def forward(
         self,
@@ -52,10 +48,13 @@ class CausalLM(GenerationArchitecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = self.lm_head(outputs.logits)
-        loss = None
-        if labels is not None:
-            loss = self.loss_function(logits, labels)
+        logits = cast(Tensor, outputs.logits)
+        if labels is None:
+            loss = None
+            logits = self.lm_head(logits)
+        else:
+            loss = self.loss_function(logits, self.lm_head.weight, labels)
+            logits = None
         return ModelOutput(
             logits=logits,
             loss=loss,
@@ -89,7 +88,8 @@ class SequenceClassification(Architecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = self.score(outputs.logits)
+        logits = cast(Tensor, outputs.logits)
+        logits = self.score(logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
@@ -126,7 +126,8 @@ class TokenClassification(Architecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = self.score(outputs.logits)
+        logits = cast(Tensor, outputs.logits)
+        logits = self.score(logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)

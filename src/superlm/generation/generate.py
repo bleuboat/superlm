@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from torch import Tensor
-from typing import Any
+from typing import Any, cast
 from collections.abc import Generator
 
 from superlm.streamer import Streamer
@@ -71,8 +71,8 @@ class GenerationArchitecture(Architecture):
         unfinished = True
         while unfinished:
             outputs = self(inputs)
-            logits = outputs.logits[:, -1, :]
-            score = processors(inputs, logits)
+            logits = cast(Tensor, outputs.logits)
+            score = processors(inputs, logits[:, -1, :])
             if do_sample:
                 probs = F.softmax(score, dim=-1)
                 next_token = torch.multinomial(probs, num_samples=1)
@@ -96,8 +96,8 @@ class GenerationArchitecture(Architecture):
         unfinished = True
         while unfinished:
             outputs = self(inputs)
-            logits = outputs.logits[:, -1, :]
-            score = processors(inputs, logits)
+            logits = cast(Tensor, outputs.logits)
+            score = processors(inputs, logits[:, -1, :])
             if do_sample:
                 probs = F.softmax(score, dim=-1)
                 next_token = torch.multinomial(probs, num_samples=1)
