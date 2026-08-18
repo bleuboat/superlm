@@ -1,1 +1,4 @@
-from . import build_config
+from . import (
+    build_version,
+    build_config,
+)
