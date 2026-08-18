@@ -258,14 +258,15 @@ def indent(code: str) -> str:
     return re.sub(r"^([^\n])", r"    \1", code, flags=re.MULTILINE)
 
 
+all = f"__all__ = {list(configs.keys())}".replace("'", '"')
+
 final_code = f"""from typing import TYPE_CHECKING
+
+{all}
 
 if TYPE_CHECKING:
 {indent(typing)}
 else:
-{indent(code)}
-"""
-
-final_code += f"\n__all__ = {list(configs.keys())}\n".replace("'", '"')
+{indent(code)}"""
 
 file_py.write_text(final_code)
