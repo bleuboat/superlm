@@ -248,7 +248,7 @@ for config, data in configs.items():
         if "lambda" not in default:
             typing += f"    {name}: {annotation} = {default}\n"
         else:
-            typing += f"    {name}: {annotation} = ...  # pyright: ignore[reportAssignmentType]\n"
+            typing += f"    {name}: {annotation} = ...  # type: ignore\n"
 
 
 def indent(code: str) -> str:

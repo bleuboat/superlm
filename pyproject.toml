@@ -29,7 +29,6 @@ exclude = ["workspace.py", "models"]
 
 [tool.ruff]
 line-length = 100
-src = ["src"]
 
 [tool.ruff.lint]
 select = [
