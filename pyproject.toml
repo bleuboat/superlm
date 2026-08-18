@@ -6,7 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "superlm"
 version = "0.6.0"
 description = "SuperLM Model"
+authors = [{ name = "bleuboat", email = "3751541788@qq.com" }]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
     "torch>=2.2.0",
