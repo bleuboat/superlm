@@ -48,12 +48,12 @@ class CausalLM(GenerationArchitecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = cast(Tensor, outputs.logits)
+        output_logits = cast(Tensor, outputs.logits)
         if labels is None:
             loss = None
-            logits = self.lm_head(logits)
+            logits = self.lm_head(output_logits)
         else:
-            loss = self.loss_function(logits, self.lm_head.weight, labels)
+            loss = self.loss_function(output_logits, self.lm_head.weight, labels)
             logits = None
         return ModelOutput(
             logits=logits,
@@ -88,8 +88,8 @@ class SequenceClassification(Architecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = cast(Tensor, outputs.logits)
-        logits = self.score(logits)
+        output_logits = cast(Tensor, outputs.logits)
+        logits = self.score(output_logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
@@ -126,8 +126,8 @@ class TokenClassification(Architecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        logits = cast(Tensor, outputs.logits)
-        logits = self.score(logits)
+        output_logits = cast(Tensor, outputs.logits)
+        logits = self.score(output_logits)
         loss = None
         if labels is not None:
             loss = self.loss_function(logits, labels)
