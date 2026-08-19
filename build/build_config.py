@@ -234,7 +234,10 @@ for config, data in configs.items():
     for name, annotation, default in data[1]:
         origin = re.sub(r"\[.*?\]", "", annotation)
         code += (
-            f'        self.{name} = kwargs.param("{name}", {origin}, default={default})\n'
+            f"""        self.{name} = kwargs.param(
+            "{name}", {origin}, default={default},
+        )
+"""
         )
     if data[0]:
         code += "\n    def check_extras(self, err: list[Exception]) -> None:\n"

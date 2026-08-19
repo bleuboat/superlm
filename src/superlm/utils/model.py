@@ -1,8 +1,12 @@
+from typing import Any
+
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from torch import Tensor
 from dataclasses import dataclass
+from functools import partial
 
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
@@ -12,6 +16,7 @@ __all__ = [
     "ModelOutput",
     "Model",
     "Architecture",
+    "GradientCheckpointingLayer",
     "auto_model",
     "register_model",
     "register_architecture",
@@ -86,6 +91,10 @@ class Architecture(nn.Module):
 
         self.model = MODEL_CLASSES[self.config.model_type](self.config)
 
+        if self.config.gradient_checkpointing:
+            for module in self.model.modules():
+                module.gradient_checkpointing = True
+
     def __call__(
         self,
         input_ids: Tensor,
@@ -112,3 +121,16 @@ class Architecture(nn.Module):
     @property
     def dtype(self) -> torch.dtype:
         return next(p.dtype for p in self.parameters() if p.is_floating_point())
+
+
+class GradientCheckpointingLayer(nn.Module):
+    gradient_checkpointing: bool = False
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.gradient_checkpointing and self.training:
+            return checkpoint(
+                partial(self._wrapped_call_impl, **kwargs),
+                *args,
+                use_reentrant=False,
+            )
+        return self._wrapped_call_impl(*args, **kwargs)

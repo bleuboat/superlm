@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from superlm.utils import ModelOutput, Model, register_model
+from superlm.utils import ModelOutput, Model, GradientCheckpointingLayer, register_model
 
 
 __all__ = ["SuperlmModel"]
@@ -111,7 +111,7 @@ class SuperlmMLP(nn.Module):
         return self.down(self.act(self.gate(x)) * self.up(x))
 
 
-class SuperlmLayer(nn.Module):
+class SuperlmLayer(GradientCheckpointingLayer):
     __call__: Callable[[Tensor, tuple[Tensor, Tensor]], tuple[Tensor, Tensor]]
 
     def __init__(self, config: ModelConfig) -> None:
