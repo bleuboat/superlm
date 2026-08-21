@@ -26,12 +26,14 @@ packages = {find = {where = ["src"]}}
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
+ignore = ["**/*.in"]
 
 [tool.mypy]
 exclude = ["workspace.py", "models"]
 
 [tool.ruff]
 line-length = 100
+exclude = ["**/*.in"]
 
 [tool.ruff.lint]
 select = [
