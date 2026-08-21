@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import ModelOutput, Model, register_model
+from .utils import *
 
 
 __all__ = ["BoW"]
@@ -61,14 +61,14 @@ class Layer(nn.Module):
 
 @register_model
 class BoW(Model):
-    wte: nn.Embedding
+    wte: Embedding
     wpe: nn.Embedding
     layers: nn.ModuleList[Layer]
     ln_f: nn.RMSNorm
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
+        self.wte = Embedding(config)
         self.wpe = nn.Embedding(config.block_size, config.n_embd)
         self.layers = nn.ModuleList([Layer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)

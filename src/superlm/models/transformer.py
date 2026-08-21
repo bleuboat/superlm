@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import ModelOutput, Model, GradientCheckpointingLayer, register_model
+from .utils import *
 
 
 __all__ = ["SuperlmModel"]
@@ -130,14 +130,14 @@ class SuperlmLayer(GradientCheckpointingLayer):
 
 @register_model
 class SuperlmModel(Model):
-    wte: nn.Embedding
+    wte: Embedding
     wpe: SuperlmRotaryEmbedding
     layers: nn.ModuleList[SuperlmLayer]
     ln_f: nn.RMSNorm
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.wte = nn.Embedding(config.vocab_size, config.n_embd, config.pad_token_ix)
+        self.wte = Embedding(config)
         self.wpe = SuperlmRotaryEmbedding(config)
         self.layers = nn.ModuleList([SuperlmLayer(config) for _ in range(config.n_layer)])
         self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)

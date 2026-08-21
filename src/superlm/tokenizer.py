@@ -6,28 +6,28 @@ from typing import cast
 from collections.abc import Container, Iterable
 
 
-__all__ = ["TokenNotFoundError", "Tokenizer"]
+__all__ = ["Tokenizer"]
 
 PATTERN = re.compile(r"(?i:'s|'t|'re|'ve|'m|'ll|'d)| ?[A-Za-z]+|[\r\n]+|\s+|.")
-
-
-class TokenNotFoundError(LookupError):
-    def __init__(self, token: str, *, text: str, max_length: int = 30) -> None:
-        if len(text) > max_length:
-            message = f"unknown token '{token}' (at text '{text[:10]}...{text[-10:]}')"
-        else:
-            message = f"unknown token '{token}' (at text '{text}')"
-        super().__init__(message)
 
 
 class Tokenizer:
     def __init__(self, tokens: list[str]) -> None:
         self.tokens = tokens
-        self.vocab_size = len(tokens)
+        self.vocab_size = len(tokens) - 1
         self.token_to_ix = {ch: i for i, ch in enumerate(tokens)}
         self.bos_token_ix = self.token_to_ix["<BOS>"]
         self.eos_token_ix = self.token_to_ix["<EOS>"]
         self.pad_token_ix = self.token_to_ix["<PAD>"]
+        self.unk_token_ix = self.token_to_ix["<UNK>"]
+        if self.unk_token_ix != self.vocab_size:
+            raise AssertionError
+        self.special_tokens = {
+            self.bos_token_ix,
+            self.eos_token_ix,
+            self.pad_token_ix,
+            self.unk_token_ix,
+        }
 
     def encode(
         self,
@@ -49,11 +49,7 @@ class Tokenizer:
             out: list[int] = []
             if "bos" in special_tokens:
                 out.append(self.bos_token_ix)
-            for token in tokens:
-                if token in self.token_to_ix:
-                    out.append(self.token_to_ix[token])
-                else:
-                    raise TokenNotFoundError(token, text="".join(tokens))
+            out.extend(self.token_to_ix.get(token, self.unk_token_ix) for token in tokens)
             if "eos" in special_tokens:
                 out.append(self.eos_token_ix)
             if "pad" in special_tokens:
@@ -67,13 +63,11 @@ class Tokenizer:
         )
 
     def decode(self, contents: Tensor | Iterable[Tensor]) -> list[str]:
-        special_tokens = {self.bos_token_ix, self.eos_token_ix, self.pad_token_ix}
-
         def _decode(content: Tensor) -> str:
             out: list[str] = []
             for token in content:
                 ix = cast(int, token.item())
-                if ix not in special_tokens:
+                if ix not in self.special_tokens:
                     out.append(self.tokens[ix])
             return "".join(out)
 
@@ -84,6 +78,6 @@ class Tokenizer:
     @classmethod
     def from_data(cls, data: str | Iterable[str]) -> Tokenizer:
         data = data if isinstance(data, str) else "\n".join(data)
-        tokens = set(PATTERN.findall(data))
-        tokens.update(("<BOS>", "<EOS>", "<PAD>"))
-        return cls(sorted(tokens))
+        tokens = sorted(set(PATTERN.findall(data)))
+        tokens.extend(("<BOS>", "<EOS>", "<PAD>", "<UNK>"))
+        return cls(tokens)
