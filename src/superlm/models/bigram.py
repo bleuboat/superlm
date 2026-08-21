@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torch import Tensor
 from superlm.config import ModelConfig
-from superlm.utils import ModelOutput, Model, register_model
+from .utils import ModelOutput, Model, register_model
 
 
 __all__ = ["Bigram"]

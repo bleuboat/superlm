@@ -7,7 +7,7 @@ from collections.abc import Generator
 
 from superlm.streamer import Streamer
 from superlm.config import GenerationConfig
-from superlm.utils import Architecture
+from superlm.architectures import Architecture
 
 from .logits_process import (
     LogitsProcessorList,

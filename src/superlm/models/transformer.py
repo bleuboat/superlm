@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from superlm.utils import ModelOutput, Model, GradientCheckpointingLayer, register_model
+from .utils import ModelOutput, Model, GradientCheckpointingLayer, register_model
 
 
 __all__ = ["SuperlmModel"]

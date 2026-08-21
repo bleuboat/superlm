@@ -1,0 +1,59 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
+from typing import cast
+from superlm.config import ModelConfig, GenerationConfig
+from superlm.tokenizer import Tokenizer
+from superlm.models import ModelOutput
+from .utils import Architecture, register_architecture
+
+
+class SequenceClassificationLoss:
+    def __init__(self, config: ModelConfig) -> None:
+        self.num_labels = config.num_labels
+
+    def __call__(self, logits: Tensor, labels: Tensor) -> Tensor:
+        if self.num_labels == 1:
+            return F.mse_loss(logits.squeeze(), labels.squeeze())
+        if labels.dtype in {torch.long, torch.int}:
+            return F.cross_entropy(logits.view(-1, self.num_labels), labels.view(-1))
+        return F.binary_cross_entropy_with_logits(logits, labels)
+
+
+@register_architecture
+class SequenceClassification(Architecture):
+    def __init__(
+        self,
+        tokenizer: Tokenizer,
+        config: ModelConfig,
+        generation_config: GenerationConfig,
+    ) -> None:
+        super().__init__(tokenizer, config, generation_config)
+        self.score = nn.Linear(self.config.n_embd, self.config.num_labels, bias=False)
+        self.loss_function = SequenceClassificationLoss(self.config)
+
+    def forward(
+        self,
+        input_ids: Tensor,
+        labels: Tensor | None = None,
+        *,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+    ) -> ModelOutput:
+        outputs = self.model(
+            input_ids=input_ids,
+            output_hidden_states=output_hidden_states,
+            output_attentions=output_attentions,
+        )
+        output_logits = cast(Tensor, outputs.logits)
+        logits = self.score(output_logits)
+        loss = None
+        if labels is not None:
+            loss = self.loss_function(logits, labels)
+        return ModelOutput(
+            logits=logits,
+            loss=loss,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )

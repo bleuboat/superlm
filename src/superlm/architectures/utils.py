@@ -1,42 +1,20 @@
-from typing import Any
-
 import torch
 import torch.nn as nn
-from torch.utils.checkpoint import checkpoint
-
 from torch import Tensor
-from dataclasses import dataclass
-from functools import partial
 
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
+from superlm.models import ModelOutput, auto_model
 
 
 __all__ = [
-    "ModelOutput",
-    "Model",
-    "Architecture",
-    "GradientCheckpointingLayer",
-    "auto_model",
-    "register_model",
     "register_architecture",
+    "auto_architecture",
+    "Architecture",
 ]
 
-MODEL_CLASSES: dict[str, type[Model]] = {}
+
 ARCHITECTURE_CLASSES: dict[str, type[Architecture]] = {}
-
-
-def auto_model(
-    tokenizer: Tokenizer,
-    config: ModelConfig,
-    generation_config: GenerationConfig,
-) -> Model:
-    return MODEL_CLASSES[config.architecture](tokenizer, config, generation_config)
-
-
-def register_model[T: type[Model]](model_class: T) -> T:
-    MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
-    return model_class
 
 
 def register_architecture[T: type[Architecture]](architecture_class: T) -> T:
@@ -44,29 +22,12 @@ def register_architecture[T: type[Architecture]](architecture_class: T) -> T:
     return architecture_class
 
 
-@dataclass
-class ModelOutput:
-    logits: Tensor | None = None
-    loss: Tensor | None = None
-    hidden_states: tuple[Tensor, ...] | None = None
-    attentions: tuple[Tensor, ...] | None = None
-
-
-class Model(nn.Module):
-    wte: nn.Embedding
-
-    def __call__(
-        self,
-        input_ids: Tensor,
-        *,
-        output_hidden_states: bool,
-        output_attentions: bool,
-    ) -> ModelOutput:
-        return self._wrapped_call_impl(
-            input_ids=input_ids,
-            output_hidden_states=output_hidden_states,
-            output_attentions=output_attentions,
-        )  # pyright: ignore
+def auto_architecture(
+    tokenizer: Tokenizer,
+    config: ModelConfig,
+    generation_config: GenerationConfig,
+) -> Architecture:
+    return ARCHITECTURE_CLASSES[config.architecture](tokenizer, config, generation_config)
 
 
 class Architecture(nn.Module):
@@ -89,7 +50,7 @@ class Architecture(nn.Module):
         self.generation_config.eos_token_ix = tokenizer.eos_token_ix
         self.generation_config.pad_token_ix = tokenizer.pad_token_ix
 
-        self.model = MODEL_CLASSES[self.config.model_type](self.config)
+        self.model = auto_model(self.config)
 
         if self.config.gradient_checkpointing:
             for module in self.model.modules():
@@ -121,16 +82,3 @@ class Architecture(nn.Module):
     @property
     def dtype(self) -> torch.dtype:
         return next(p.dtype for p in self.parameters() if p.is_floating_point())
-
-
-class GradientCheckpointingLayer(nn.Module):
-    gradient_checkpointing: bool = False
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if self.gradient_checkpointing and self.training:
-            return checkpoint(
-                partial(self._wrapped_call_impl, **kwargs),
-                *args,
-                use_reentrant=False,
-            )
-        return self._wrapped_call_impl(*args, **kwargs)

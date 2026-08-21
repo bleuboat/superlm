@@ -11,7 +11,7 @@ from collections.abc import Iterable, Sequence
 from .config import TrainingConfig, AdamConfig
 from .tokenizer import Tokenizer
 from .dataset import TextDataset
-from .models import CausalLM
+from .architectures import CausalLM
 
 __all__ = ["Trainer"]
 

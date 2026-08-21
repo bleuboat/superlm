@@ -8,7 +8,7 @@ from collections.abc import Callable, Generator, Sequence
 
 from .paths import *
 from .config import *
-from .models import *
+from .architectures import *
 from .tokenizer import *
 from .streamer import *
 from .trainer import *
