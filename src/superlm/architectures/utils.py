@@ -69,7 +69,7 @@ class Architecture(nn.Module):
             labels=labels,
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
-        )  # pyright: ignore
+        )
 
     @property
     def num_parameters(self) -> int:

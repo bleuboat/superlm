@@ -21,7 +21,7 @@ except ModuleNotFoundError:
 
 __all__ = ["WorkSpace"]
 
-DEFAULT_DTYPE = "bfloat16"
+DEFAULT_DTYPE = "bfloat16" if torch.cuda.is_bf16_supported() else "float32"
 DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
