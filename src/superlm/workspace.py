@@ -1,6 +1,6 @@
 import json
 import torch
-from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
+from safetensors.torch import save_model, load_model
 
 from typing import Any, cast
 from collections.abc import Callable, Generator, Sequence
@@ -243,6 +243,7 @@ class WorkSpace:
             load_model(self.model, self.paths.model)
 
     def info(self) -> None:
+        self.check()
         print("----")
         print(f"model parameters: {self.model.num_parameters / 1e6:.2f}M")
         print(f"data size: {self.trainer.dataset.length}")

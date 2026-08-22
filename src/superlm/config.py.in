@@ -1,203 +1,118 @@
-from typing import TYPE_CHECKING
-
 __all__ = ${all}
 
-if TYPE_CHECKING:
-    from dataclasses import dataclass
-    from typing import Any, Never, Self
-    from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
+from .activations import ACTIVATIONS
+from types import UnionType
+from typing import Any, Never, Self
+from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
-    class Config(MutableMapping[str, Any]):
-        _data: dict[str, Any]
 
-        def __init__(self, **kwargs: Any) -> None:
-            super().__setattr__("_data", {})
-            super().__init__(**kwargs)
+type AnyClass = type | UnionType
 
-        def __setitem__(self, key: str, value: Any) -> None:
-            self._data[key] = value
 
-        def __getitem__(self, key: str) -> Any:
-            return self._data[key]
+class Parameter:
+    __slots__ = ("annotation", "default", "value")
+    __sentinel = object()
 
-        def __delitem__(self, key: str) -> Never:
-            raise NotImplementedError("don't delete config's items")
+    def __init__(self, annotation: AnyClass, default: Any) -> None:
+        self.value = self.__sentinel
+        self.annotation = annotation
+        if callable(default):
+            self.default = default
+        else:
+            self.default = lambda: default
 
-        def __setattr__(self, key: str, value: Any) -> None:
-            self._data[key] = value
-
-        def __getattr__(self, key: str) -> Any:
-            return self._data[key]
-
-        def __len__(self) -> int:
-            return self._data.__len__()
-
-        def __iter__(self) -> Iterator[str]:
-            return self._data.__iter__()
-
-        def __contains__(self, key: Any) -> bool:
-            return self._data.__contains__(key)
-
-        def __str__(self) -> str:
-            return f"{type(self).__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
-
-        def __repr__(self) -> str:
-            return f"{type(self).__name__}({", ".join(f"{k}={self[k]}" for k in self)})"
-
-        def __hash__(self) -> int:
-            return hash(tuple(self.items()))
-
-        def check(self) -> None:
-            return
-
-        def copy(self: Self) -> Self:
-            return type(self)(**self)
-
-        def keys(self) -> KeysView[str]:
-            return self._data.keys()
-
-        def values(self) -> ValuesView[Any]:
-            return self._data.values()
-
-        def items(self) -> ItemsView[str, Any]:
-            return self._data.items()
-
-        def update(self, other: Any = None, /, **kwargs: Any) -> None:
-            if other:
-                raise NotImplementedError("'other' argument is not implemented")
-            for k, v in kwargs.items():
-                self[k] = v
-
-    ${config_typing}
-
-else:
-    from .activations import ACTIVATIONS
-    from typing import Any, Never, Self
-    from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
-
-    class Parameter:
-        __slots__ = ("annotation", "default", "value")
-
-        def __init__(self, value: Any, annotation: type, default: Any) -> None:
-            self.value = value
-            self.annotation = annotation
-            if callable(default):
-                self.default = default
-            else:
-                self.default = lambda: default
-
-        def get(self) -> Any:
-            if self.value is not None:
-                return self.value
+    def get(self) -> Any:
+        if self.value is self.__sentinel:
             return self.default()
+        return self.value
 
-        def set(self, value: Any) -> None:
-            if isinstance(value, Parameter):
-                self.value = value.value
-                self.default = value.default
-            else:
-                self.value = value
+    def __repr__(self) -> str:
+        return f"Parameter({self.get()})"
 
-        def __repr__(self) -> str:
-            return f"Parameter({self.get()})"
 
-    class Kwargs:
-        __slots__ = ("kwargs",)
+class Config(MutableMapping[str, Any]):
+    __slots__ = ("_data",)
+    _data: dict[str, Parameter]
 
-        def __init__(self, kwargs: dict[str, Any]) -> None:
-            self.kwargs = kwargs.copy()
+    def __init__(self) -> None:
+        super().__setattr__("_data", {})
 
-        def param(self, name: str, annotation: type, default: Any) -> Any:
-            return Parameter(self.kwargs.pop(name, None), annotation, default)
+    def __setitem__(self, key: str, value: Any) -> None:
+        self._data[key].value = value
 
-    class Config(MutableMapping[str, Any]):
-        __slots__ = ("_data",)
-        _data: dict[str, Parameter]
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key].get()
 
-        def __init__(self, **kwargs: Any) -> None:
-            super().__setattr__("_data", {})
-            new_kwargs = Kwargs(kwargs)
-            self.init(new_kwargs)
-            if len(new_kwargs.kwargs) > 0:
-                raise KeyError(*new_kwargs.kwargs.keys())
+    def __delitem__(self, key: str) -> Never:
+        raise NotImplementedError("don't delete config's items")
 
-        def __setitem__(self, key: str, value: Any) -> None:
-            if key in self:
-                self._data[key].set(value)
-            elif isinstance(value, Parameter):
-                self._data[key] = value
-            else:
-                self._data[key] = Parameter(value, object, None)
+    def __setattr__(self, key: str, value: Any) -> None:
+        self[key] = value
 
-        def __getitem__(self, key: str) -> Any:
-            return self._data[key].get()
+    def __getattr__(self, key: str) -> Any:
+        return self[key]
 
-        def __delitem__(self, key: str) -> Any:
-            raise NotImplementedError("don't delete config's items")
+    def __len__(self) -> int:
+        return self._data.__len__()
 
-        def __setattr__(self, key: str, value: Any) -> None:
-            self[key] = value
+    def __iter__(self) -> Iterator[str]:
+        return self._data.__iter__()
 
-        def __getattr__(self, key: str) -> Never:
-            return self[key]
+    def __contains__(self, key: Any) -> bool:
+        return self._data.__contains__(key)
 
-        def __len__(self) -> int:
-            return self._data.__len__()
+    def __str__(self) -> str:
+        return f"{type(self).__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
 
-        def __iter__(self) -> Iterator[str]:
-            return self._data.__iter__()
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({", ".join(f"{k}={self[k]!r}" for k in self)})"
 
-        def __contains__(self, key: Any) -> bool:
-            return self._data.__contains__(key)
+    def __hash__(self) -> int:
+        return hash(tuple(self.items()))
 
-        def __str__(self) -> str:
-            return f"{type(self).__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
+    def _check_params(self) -> None:
+        for name, param in self._data.items():
+            annotation = param.annotation
+            if not isinstance(param.get(), annotation):
+                if isinstance(annotation, UnionType):
+                    types = annotation.__args__
+                else:
+                    types = (annotation.__name__,)
+                raise TypeError(
+                    f"'{name}' must be {" or ".join(f"a {type}" for type in types)}, "
+                    f"got {type(param.get()).__name__}",
+                )
 
-        def __repr__(self) -> str:
-            return f"{type(self).__name__}({", ".join(f"{k}={self[k]}" for k in self)})"
+    def _check_extras(self) -> None:
+        return
 
-        def __hash__(self) -> int:
-            return hash(tuple(self.items()))
+    def check(self) -> None:
+        self._check_params()
+        self._check_extras()
 
-        def init(self, kwargs: Kwargs) -> None:
-            return
+    def copy(self) -> Self:
+        out = type(self)()
+        for k, v in self._data.items():
+            out[k] = v.value
+        return out
 
-        def check_params(self, err: list[Exception]) -> None:
-            for name, param in self._data.items():
-                if not isinstance(param.get(), param.annotation):
-                    err.append(TypeError(
-                        f"'{name}' must be a {param.annotation.__name__}, "
-                        f"got {type(param.get()).__name__}",
-                    ))
+    def keys(self) -> KeysView[str]:
+        return self._data.keys()
 
-        def check_extras(self, err: list[Exception]) -> None:
-            return
+    def values(self) -> ValuesView[Any]:
+        return self._data.values()
 
-        def check(self) -> None:
-            err: list[Exception] = []
-            self.check_params(err)
-            self.check_extras(err)
-            if len(err) == 1:
-                raise err[0]
-            if err:
-                raise ExceptionGroup("ConfigError", err)
+    def items(self) -> ItemsView[str, Any]:
+        return self._data.items()
 
-        def copy(self: Self) -> Self:
-            return type(self)(**self)
+    def update(self, other: Any = None, /, **kwargs: Any) -> None:
+        if other:
+            raise NotImplementedError("'other' argument is not implemented")
+        for k, v in kwargs.items():
+            self[k] = v
 
-        def keys(self) -> KeysView[str]:
-            return self._data.keys()
+    def add_param(self, name: str, annotation: AnyClass, default: Any) -> None:
+        self._data[name] = Parameter(annotation, default)
 
-        def values(self) -> ValuesView[Any]:
-            return self._data.values()
 
-        def items(self) -> ItemsView[str, Any]:
-            return self._data.items()
-
-        def update(self, other: Any = None, /, **kwargs: Any) -> None:
-            if other:
-                raise NotImplementedError("'other' argument is not implemented")
-            for k, v in kwargs.items():
-                self[k] = v
-
-    ${config_raw}
+${code}
