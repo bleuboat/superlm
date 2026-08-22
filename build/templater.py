@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import sys
 
 __all__ = ["apply"]
 
@@ -21,7 +22,10 @@ class Templater:
         return self.vars[match.group(1)]
 
 
-def apply(path: Path, vars: dict[str, str]) -> None:
+def apply(path: Path) -> None:
+    frame = sys._getframe(1)  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    vars = frame.f_globals
+    del frame
     templater = Templater(vars)
     template_path = path.parent / (path.name + ".in")
     code = template_path.read_text("utf-8")

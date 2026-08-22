@@ -13,4 +13,4 @@ dtypes: list[str] = re.findall(r"^(.*?): dtype = ...$", C.read_text(), flags=re.
 
 dtypes_dict = "".join(f'"{dtype}": torch.{dtype},\n' for dtype in dtypes)
 dtypes_file = Path("src") / "superlm" / "dtypes.py"
-templater.apply(dtypes_file, vars())
+templater.apply(dtypes_file)

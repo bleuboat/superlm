@@ -18,4 +18,4 @@ for name in ("architectures", "models"):
             imports += f"from .{file_name} import {file_import}\n"
             for file_class in file_classes:
                 all += f'"{file_class}",\n'
-    templater.apply(folder / "__init__.py", vars())
+    templater.apply(folder / "__init__.py")

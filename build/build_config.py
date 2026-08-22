@@ -68,4 +68,4 @@ for config, data in configs.items():
 
 all = str(list(configs.keys())).replace("'", '"')
 
-templater.apply(file_py, vars())
+templater.apply(file_py)

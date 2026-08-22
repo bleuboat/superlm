@@ -23,4 +23,4 @@ with file_config.open() as f:
         value = re.sub(r"/ (.*?)$", r'/ "\1"', value, flags=re.MULTILINE)
         code += f"self.{key} = root / {value}\n"
 
-templater.apply(file_py, vars())
+templater.apply(file_py)
