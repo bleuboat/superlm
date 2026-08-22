@@ -80,11 +80,7 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(
-        self,
-        length: int | None = None,
-        steps: Sequence[int] | None = None,
-    ) -> dict[str, torch.Tensor]:
+    def train(self, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         if self.checkpoint_path.exists():
             self.restart()
         if steps is None:
@@ -95,13 +91,13 @@ class Trainer:
             if step % steps[0] == 0:
                 self.log()
             if step % steps[1] == 0:
-                self.sample(length)
+                self.sample()
             if step % steps[2] == 0:
                 self.checkpoint()
             if step >= self.num_steps:
                 break
         self.log()
-        self.sample(length)
+        self.sample()
         self.checkpoint_path.unlink()
         return self.model.state_dict()
 
@@ -115,14 +111,14 @@ class Trainer:
             f"time: {time_used:.6f}s",
         )
 
-    def sample(self, length: int | None = None) -> None:
+    def sample(self) -> None:
         sample_ix = self.model.generate(
             inputs=self.tokenizer(
                 contents=("",),
                 special_tokens=("bos",),
                 device=self.model.device,
             ),
-            max_new_tokens=length or self.model.config.block_size,
+            max_new_tokens=100,
         )
         txt = self.tokenizer.decode(sample_ix)[0]
         print("----")

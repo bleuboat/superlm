@@ -2,12 +2,12 @@ import json
 import torch
 from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
 
-from torch._prims_common import DeviceLikeType
 from typing import Any, cast
 from collections.abc import Callable, Generator, Sequence
 
 from .paths import *
 from .config import *
+from .dtypes import *
 from .architectures import *
 from .tokenizer import *
 from .streamer import *
@@ -21,6 +21,9 @@ except ModuleNotFoundError:
 
 __all__ = ["WorkSpace"]
 
+DEFAULT_DTYPE = "bfloat16"
+DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 class WorkSpace:
     def __init__(
@@ -28,25 +31,16 @@ class WorkSpace:
         path: str,
         *,
         seed: int | None = None,
-        dtype: torch.dtype | None = None,
-        device: DeviceLikeType | None = None,
+        dtype: str = DEFAULT_DTYPE,
+        device: str = DEFAULT_DEVICE,
     ) -> None:
         self.paths = Paths(*path.split("/"))
 
         if seed is not None:
             torch.manual_seed(seed)
 
-        if dtype is not None:
-            torch.set_default_dtype(dtype)
-        else:
-            torch.set_default_dtype(torch.bfloat16)
-
-        self.dtype = torch.get_default_dtype()
-
-        if device is not None:
-            self.device = torch.device(device)
-        else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.set_dtype(dtype)
+        self.set_device(device)
 
         self.model_config = ModelConfig()
         self.generation_config = GenerationConfig()
@@ -110,14 +104,14 @@ class WorkSpace:
     def set_seed(self, seed: int) -> None:
         torch.manual_seed(seed)
 
-    def set_dtype(self, dtype: torch.dtype) -> None:
-        torch.set_default_dtype(dtype)
-        self.dtype = dtype
+    def set_dtype(self, dtype: str) -> None:
+        self.dtype = DTYPES[dtype]
+        torch.set_default_dtype(self.dtype)
 
-    def set_device(self, device: DeviceLikeType) -> None:
+    def set_device(self, device: str) -> None:
         self.device = torch.device(device)
-        if self._model is not None:
-            self._model.to(self.device)
+        if getattr(self, "_model", None) is not None:
+            self.model.to(self.device)
 
     def set_model_name(self, model_name: str) -> None:
         self.paths.model_name = model_name
@@ -154,11 +148,11 @@ class WorkSpace:
         ):
             config.check()
 
-    def train(self, length: int | None = None, steps: Sequence[int] | None = None) -> None:
+    def train(self, steps: Sequence[int] | None = None) -> None:
         self.check()
         self.save()
         self.model.train()
-        trained = self.trainer.train(length, steps)
+        trained = self.trainer.train(steps)
         self.model.load_state_dict(trained)
         self.model.eval()
         self.save()

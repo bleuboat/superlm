@@ -1,6 +1,5 @@
-from torch import (
-    ${torch_list}
-)
-__all__ = [
-    ${all_list}
-]
+import torch
+DTYPES = {
+    ${dtypes_dict}
+}
+__all__ = ["DTYPES"]

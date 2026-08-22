@@ -11,10 +11,9 @@ torch = Path(spec.origin).parent
 C = torch / "_C" / "__init__.pyi"
 dtypes: list[str] = re.findall(r"^(.*?): dtype = ...$", C.read_text(), flags=re.MULTILINE)
 
-torch_list = all_list = ""
+dtypes_dict = ""
 for dtype in dtypes:
-    torch_list += f"{dtype},\n"
-    all_list += f'"{dtype}",\n'
+    dtypes_dict += f'"{dtype}": torch.{dtype},\n'
 
 dtypes_file = Path("src") / "superlm" / "dtypes.py"
 templater.apply(dtypes_file, vars())

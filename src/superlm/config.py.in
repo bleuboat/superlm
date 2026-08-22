@@ -44,6 +44,9 @@ if TYPE_CHECKING:
         def __repr__(self) -> str:
             return f"{type(self).__name__}({", ".join(f"{k}={self[k]}" for k in self)})"
 
+        def __hash__(self) -> int:
+            return hash(tuple(self.items()))
+
         def check(self) -> None:
             return
 
@@ -152,6 +155,9 @@ else:
 
         def __repr__(self) -> str:
             return f"{type(self).__name__}({", ".join(f"{k}={self[k]}" for k in self)})"
+
+        def __hash__(self) -> int:
+            return hash(tuple(self.items()))
 
         def init(self, kwargs: Kwargs) -> None:
             return

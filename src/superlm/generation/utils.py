@@ -9,19 +9,8 @@ from superlm.streamer import Streamer
 from superlm.config import GenerationConfig
 from superlm.architectures import Architecture
 
-from .logits_process import (
-    LogitsProcessorList,
-    TemperatureLogitsWarper,
-    RepetitionPenaltyLogitsProcessor,
-    TopPLogitsWarper,
-    TopKLogitsWarper,
-)
-from .stopping_criteria import (
-    StoppingCriteriaList,
-    MaxLengthCriteria,
-    MaxTimeCriteria,
-    EosTokenCriteria,
-)
+from .logits_process import *
+from .stopping_criteria import *
 
 
 __all__ = ["GenerationArchitecture"]
@@ -33,19 +22,41 @@ class GenerationArchitecture(Architecture):
         generation_config.update(**kwargs)
         if generation_config.max_new_tokens is not None:
             generation_config.max_length = generation_config.max_new_tokens + inputs.shape[-1]
+        if generation_config.min_new_tokens is not None:
+            generation_config.min_length = generation_config.min_new_tokens + inputs.shape[-1]
         return generation_config
 
     def _get_processors(self, generation_config: GenerationConfig) -> LogitsProcessorList:
         processors = LogitsProcessorList()
-        if generation_config.repetition_penalty != 1:
-            processors.append(RepetitionPenaltyLogitsProcessor(penalty=generation_config.repetition_penalty))
+        if generation_config.repetition_penalty is not None:
+            processors.append(RepetitionPenaltyLogitsProcessor(
+                generation_config.repetition_penalty,
+            ))
+        if generation_config.min_length is not None and generation_config.eos_token_ix is not None:
+            processors.append(MinLengthLogitsProcessor(
+                generation_config.min_length, generation_config.eos_token_ix,
+            ))
         if generation_config.do_sample:
-            if generation_config.temperature != 1:
-                processors.append(TemperatureLogitsWarper(generation_config.temperature))
-            if generation_config.top_k != 0:
-                processors.append(TopKLogitsWarper(generation_config.top_k))
-            if generation_config.top_p < 1:
-                processors.append(TopPLogitsWarper(generation_config.top_p))
+            if generation_config.temperature is not None:
+                processors.append(TemperatureLogitsWarper(
+                    generation_config.temperature,
+                ))
+            if generation_config.top_k is not None:
+                processors.append(TopKLogitsWarper(
+                    generation_config.top_k,
+                ))
+            if generation_config.top_p is not None:
+                processors.append(TopPLogitsWarper(
+                    generation_config.top_p,
+                ))
+            if generation_config.top_h is not None:
+                processors.append(TopHLogitsWarper(
+                    generation_config.top_h,
+                ))
+            if generation_config.min_p is not None:
+                processors.append(MinPLogitsWarper(
+                    generation_config.min_p,
+                ))
         return processors
 
     def _get_criteria(self, generation_config: GenerationConfig) -> StoppingCriteriaList:
@@ -64,7 +75,7 @@ class GenerationArchitecture(Architecture):
         processors = self._get_processors(generation_config)
         criteria = self._get_criteria(generation_config)
 
-        if streamer is not None:
+        if streamer:
             streamer.put(inputs.cpu())
 
         do_sample = generation_config.do_sample
@@ -79,11 +90,13 @@ class GenerationArchitecture(Architecture):
             else:
                 next_token = torch.argmax(score, dim=-1).unsqueeze(1)
             inputs = torch.cat((inputs, next_token), dim=-1)
-            if streamer is not None:
-                streamer.put(next_token.cpu())
             unfinished = not criteria(inputs)
-        if streamer is not None:
+            if streamer:
+                streamer.put(next_token.cpu())
+
+        if streamer:
             streamer.end()
+
         return inputs
 
     @torch.no_grad()
