@@ -8,9 +8,6 @@ from superlm.config import ModelConfig
 from .utils import *
 
 
-__all__ = ["SuperlmModel"]
-
-
 class SuperlmRotaryEmbedding(nn.Module):
     inv_freq: Tensor
     __call__: Callable[[Tensor, Tensor], tuple[Tensor, Tensor]]

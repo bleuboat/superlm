@@ -11,4 +11,6 @@ src/superlm/config.py
 src/superlm/dtypes.py
 src/superlm/paths.py
 src/superlm/version.py
+src/superlm/architectures/__init__.py
+src/superlm/models/__init__.py
 requirements.txt

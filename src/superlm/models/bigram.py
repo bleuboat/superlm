@@ -3,9 +3,6 @@ from superlm.config import ModelConfig
 from .utils import *
 
 
-__all__ = ["Bigram"]
-
-
 @register_model
 class Bigram(Model):
     def __init__(self, config: ModelConfig) -> None:

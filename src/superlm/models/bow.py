@@ -8,9 +8,6 @@ from superlm.config import ModelConfig
 from .utils import *
 
 
-__all__ = ["BoW"]
-
-
 class CausalBoW(nn.Module):
     bias: Tensor
     __call__: Callable[[Tensor], Tensor]

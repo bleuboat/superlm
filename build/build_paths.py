@@ -2,7 +2,6 @@ from . import templater
 from pathlib import Path
 import re
 
-
 file_config = Path("build") / ".config"
 file_py = Path("src") / "superlm" / "paths.py"
 paths: list[tuple[str, str]] = []
