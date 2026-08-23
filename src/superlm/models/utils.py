@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.checkpoint import checkpoint
+from torch.utils.checkpoint import checkpoint  # pyright: ignore[reportUnknownVariableType]
 
 from torch import Tensor
 from typing import Any
@@ -42,7 +42,7 @@ class GradientCheckpointingLayer(nn.Module):
                 partial(self._wrapped_call_impl, **kwargs),
                 *args,
                 use_reentrant=False,
-            )
+            )  # pyright: ignore[reportUnknownVariableType]
         return self._wrapped_call_impl(*args, **kwargs)
 
 
@@ -88,4 +88,4 @@ class Model(nn.Module):
             input_ids=input_ids,
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
-        )  # pyright: ignore
+        )

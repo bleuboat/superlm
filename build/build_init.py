@@ -1,21 +1,10 @@
 from . import templater
+from tomllib import loads
 from pathlib import Path
-import re
 
-path = Path("src") / "superlm"
-ignore = {"__init__.py", "__init__.py.in", "utils.py"}
-
-for name in ("architectures", "models"):
-    folder = path / name
-    pattern = re.compile(rf"^@register_{name[:-1]}\nclass (.*?)\(", flags=re.MULTILINE)
-    imports = ""
-    all = ""
-    for file in folder.iterdir():
-        if file.name not in ignore:
-            file_name = file.stem
-            file_classes: list[str] = pattern.findall(file.read_text("utf-8"))
-            file_import = ", ".join(f"{file_class} as {file_class}" for file_class in file_classes)
-            imports += f"from .{file_name} import {file_import}\n"
-            for file_class in file_classes:
-                all += f'"{file_class}",\n'
-    templater.apply(folder / "__init__.py")
+pyproject_file = Path("pyproject.toml")
+init_file = Path("src") / "superlm" / "__init__.py"
+pyproject = loads(pyproject_file.read_text("utf-8"))
+description = pyproject["project"]["description"]
+version = pyproject["project"]["version"]
+templater.apply(init_file)

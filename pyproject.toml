@@ -1,21 +1,26 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
 
 [project]
 name = "superlm"
 version = "0.6.0"
 description = "SuperLM Model"
-authors = [{ name = "bleuboat", email = "3751541788@qq.com" }]
 readme = "README.md"
+authors = [
+    { name = "bleuboat", email = "3751541788@qq.com" }
+]
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
-    "torch>=2.13.0",
-    "dotenv>=0.9.9",
-    "safetensors>=0.8.0",
+    "torch",
+    "dotenv",
+    "safetensors",
 ]
+
+[project.scripts]
+superlm = "superlm:main"
 
 [tool]
 
@@ -28,12 +33,17 @@ typeCheckingMode = "strict"
 reportUnknownMemberType = false
 ignore = ["**/*.in"]
 
-[tool.mypy]
-exclude = ["workspace.py", "models"]
+[[tool.mypy.overrides]]
+module = "src.superlm.workspace"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.superlm.models.*"
+ignore_errors = true
 
 [tool.ruff]
 line-length = 100
-exclude = ["test", "workspace", "**/*.in"]
+exclude = ["**/*.in"]
 respect-gitignore = false
 
 [tool.ruff.lint]

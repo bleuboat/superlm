@@ -10,7 +10,7 @@ dotenv.load_dotenv()
 path = os.getenv("WORKSPACE_PATH")
 if path is None:
     path = "workspace"
-    dotenv.set_key(".env", "WORKSPACE_PATH", "workspace")
+    dotenv.set_key(".env", "WORKSPACE_PATH", path)
 WORKSPACE_PATH = Path(path)
 
 

@@ -1,0 +1,9 @@
+"""
+${description}
+"""
+
+from .workspace import WorkSpace
+
+__version__ = "${version}"
+
+__all__ = ["WorkSpace"]

@@ -1,6 +1,6 @@
 import json
 import torch
-from safetensors.torch import save_model, load_model
+from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
 
 from typing import Unpack, cast
 from collections.abc import Callable, Generator, Sequence
@@ -46,6 +46,12 @@ class WorkSpace:
         self.generation_config = GenerationConfig()
         self.training_config = TrainingConfig()
         self.adam_config = AdamConfig()
+        self.configs = (
+            self.model_config,
+            self.generation_config,
+            self.training_config,
+            self.adam_config,
+        )
 
         self._inputs = None
         self._tokenizer = None
@@ -84,6 +90,10 @@ class WorkSpace:
         if self._trainer is None:
             self.setup_trainer()
         return cast(Trainer, self._trainer)
+
+    @inputs.setter
+    def inputs(self, value: dict[str, str] | None) -> None:
+        self._inputs = value
 
     @tokenizer.setter
     def tokenizer(self, value: Tokenizer | None) -> None:
@@ -133,24 +143,14 @@ class WorkSpace:
 
     def config(self, **configs: Unpack[AllConfigTypedDict]) -> None:
         for k, v in configs.items():
-            for config in (
-                self.model_config, self.generation_config, self.training_config, self.adam_config,
-            ):
+            for config in self.configs:
                 if k in config:
                     config[k] = v
                     break
-
-    def check(self) -> None:
-        for config in (
-            self.model_config,
-            self.generation_config,
-            self.training_config,
-            self.adam_config,
-        ):
+        for config in self.configs:
             config.check()
 
     def train(self, steps: Sequence[int] | None = None) -> None:
-        self.check()
         self.save()
         self.model.train()
         trained = self.trainer.train(steps)
@@ -166,11 +166,10 @@ class WorkSpace:
         stream: bool = False,
         **kwargs: Unpack[GenerationConfigTypedDict],
     ) -> str:
-        self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         streamer = self.streamer if stream else None
-        res = self.model.generate(inputs_tensor, streamer=streamer, **kwargs)
-        return self.tokenizer.decode(res)[0]
+        out = self.model.generate(inputs_tensor, streamer=streamer, **kwargs)
+        return self.tokenizer.decode(out)[0]
 
     def api(
         self,
@@ -179,7 +178,6 @@ class WorkSpace:
         map: Callable[[str], str] | None = None,
         **kwargs: Unpack[GenerationConfigTypedDict],
     ) -> Generator[str]:
-        self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         for token in self.model.api(inputs_tensor, **kwargs):
             out = self.tokenizer.decode(token)[0]
@@ -198,7 +196,7 @@ class WorkSpace:
             content = file.read_text(encoding="utf-8")
             inputs[file.stem] = content
 
-        self._inputs = inputs
+        self.inputs = inputs
 
     def setup_tokenizer(self) -> None:
         self.tokenizer = Tokenizer.from_data(self.inputs.values())
@@ -250,7 +248,6 @@ class WorkSpace:
             load_model(self.model, self.paths.model)
 
     def info(self) -> None:
-        self.check()
         print("----")
         print(f"model parameters: {self.model.num_parameters / 1e6:.2f}M")
         print(f"data size: {self.trainer.dataset.length}")

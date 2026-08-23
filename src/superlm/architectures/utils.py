@@ -4,7 +4,7 @@ from torch import Tensor
 
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
-from superlm.models import ModelOutput, auto_model
+from superlm.models import ModelOutput, GradientCheckpointingLayer, auto_model
 
 
 __all__ = [
@@ -54,7 +54,8 @@ class Architecture(nn.Module):
 
         if self.config.gradient_checkpointing:
             for module in self.model.modules():
-                module.gradient_checkpointing = True
+                if isinstance(module, GradientCheckpointingLayer):
+                    module.gradient_checkpointing = True
 
     def __call__(
         self,

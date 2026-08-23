@@ -1,11 +1,11 @@
-.mypy_cache/
 .ruff_cache/
-.vscode/
+.venv/
 test/
 workspace/
 superlm.egg-info/
-.env
 __pycache__/
+.env
+.python-version
 
 src/superlm/config.py
 src/superlm/dtypes.py
