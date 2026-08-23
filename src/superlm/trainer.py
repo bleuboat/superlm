@@ -2,9 +2,11 @@ import math
 import time
 import torch
 import torch.optim as optim
+from torch import Tensor
 from torch.utils.data import DataLoader
 from pathlib import Path
 
+from dataclasses import dataclass
 from typing import Any, cast
 from collections.abc import Iterable, Sequence
 
@@ -14,6 +16,18 @@ from .dataset import TextDataset
 from .architectures import CausalLM
 
 __all__ = ["Trainer"]
+
+
+@dataclass
+class Checkpoint:
+    model_state_dict: dict[str, Any]
+    optimizer_state_dict: dict[str, Any]
+    scheduler_state_dict: dict[str, Any]
+    torch_random_state: Tensor
+    cuda_random_state: Tensor
+    step: int
+    loss: float
+    losses: list[tuple[int, float]]
 
 
 class Trainer:
@@ -47,7 +61,7 @@ class Trainer:
 
         self.dataset = TextDataset(self.tokenizer, data, self.model.config.block_size)
         self.dataloader = cast(
-            Iterable[tuple[torch.Tensor, torch.Tensor]],
+            Iterable[tuple[Tensor, Tensor]],
             DataLoader(
                 dataset=self.dataset,
                 batch_size=self.batch_size,
@@ -71,7 +85,7 @@ class Trainer:
         inputs = inputs.to(self.model.device, non_blocking=True)
         targets = targets.to(self.model.device, non_blocking=True)
         outputs = self.model(inputs, targets)
-        loss = cast(torch.Tensor, outputs.loss)
+        loss = cast(Tensor, outputs.loss)
         (loss / self.accumulation_steps).backward()
         self.smooth_loss = self.smooth_loss * 0.999 + loss.item() * 0.001
         if self.step % self.accumulation_steps == 0:
@@ -80,7 +94,7 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, steps: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+    def train(self, steps: Sequence[int] | None = None) -> dict[str, Tensor]:
         if self.checkpoint_path.exists():
             self.restart()
         if steps is None:
@@ -128,29 +142,29 @@ class Trainer:
         if self.smooth_loss >= self.best_loss:
             return
         self.best_loss = self.smooth_loss
-        checkpoint: dict[str, Any] = {
-            "model_state_dict": self.model.state_dict(),
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "scheduler_state_dict": self.scheduler.state_dict(),
-            "torch_random_state": torch.get_rng_state(),
-            "cuda_random_state": torch.cuda.get_rng_state(),
-            "step": self.step,
-            "loss": self.smooth_loss,
-            "losses": self.losses,
-        }
+        checkpoint = Checkpoint(
+            model_state_dict=self.model.state_dict(),
+            optimizer_state_dict=self.optimizer.state_dict(),
+            scheduler_state_dict=self.scheduler.state_dict(),
+            torch_random_state=torch.get_rng_state(),
+            cuda_random_state=torch.cuda.get_rng_state(),
+            step=self.step,
+            loss=self.smooth_loss,
+            losses=self.losses,
+        )
         torch.save(checkpoint, self.checkpoint_path)
 
     def restart(self) -> None:
-        checkpoint = torch.load(self.checkpoint_path, weights_only=False)
-        self.model.load_state_dict(checkpoint["model_state_dict"])
-        self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-        torch.set_rng_state(checkpoint["torch_random_state"])
-        torch.cuda.set_rng_state(checkpoint["cuda_random_state"])
-        self.step = checkpoint["step"]
-        self.smooth_loss = checkpoint["loss"]
-        self.best_loss = checkpoint["loss"]
-        self.losses = checkpoint["losses"]
+        checkpoint: Checkpoint = torch.load(self.checkpoint_path, weights_only=False)
+        self.model.load_state_dict(checkpoint.model_state_dict)
+        self.optimizer.load_state_dict(checkpoint.optimizer_state_dict)
+        self.scheduler.load_state_dict(checkpoint.scheduler_state_dict)
+        torch.set_rng_state(checkpoint.torch_random_state)
+        torch.cuda.set_rng_state(checkpoint.cuda_random_state)
+        self.step = checkpoint.step
+        self.smooth_loss = checkpoint.loss
+        self.best_loss = checkpoint.loss
+        self.losses = checkpoint.losses
 
     def _lr_lambda(self, step: int) -> float:
         if not self.num_steps:

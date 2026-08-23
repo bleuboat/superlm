@@ -36,7 +36,7 @@ def auto_model(config: ModelConfig) -> Model:
 class GradientCheckpointingLayer(nn.Module):
     gradient_checkpointing: bool = False
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:  # ruff: ignore[any-type]
         if self.gradient_checkpointing and self.training:
             return checkpoint(
                 partial(self._wrapped_call_impl, **kwargs),

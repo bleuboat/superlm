@@ -2,11 +2,11 @@ import torch
 import torch.nn.functional as F
 
 from torch import Tensor
-from typing import Any, cast
+from typing import Unpack, cast
 from collections.abc import Generator
 
 from superlm.streamer import Streamer
-from superlm.config import GenerationConfig
+from superlm.config import GenerationConfig, GenerationConfigTypedDict
 from superlm.architectures import Architecture
 
 from .logits_process import *
@@ -17,7 +17,11 @@ __all__ = ["GenerationArchitecture"]
 
 
 class GenerationArchitecture(Architecture):
-    def _get_generation_config(self, inputs: Tensor, **kwargs: Any) -> GenerationConfig:
+    def _get_generation_config(
+        self,
+        inputs: Tensor,
+        **kwargs: Unpack[GenerationConfigTypedDict],
+    ) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
         if generation_config.max_new_tokens is not None:
@@ -26,7 +30,8 @@ class GenerationArchitecture(Architecture):
             generation_config.min_length = generation_config.min_new_tokens + inputs.shape[-1]
         return generation_config
 
-    def _get_processors(self, generation_config: GenerationConfig) -> LogitsProcessorList:
+    @staticmethod
+    def _get_processors(generation_config: GenerationConfig) -> LogitsProcessorList:
         processors = LogitsProcessorList()
         if generation_config.repetition_penalty is not None:
             processors.append(RepetitionPenaltyLogitsProcessor(
@@ -59,7 +64,8 @@ class GenerationArchitecture(Architecture):
                 ))
         return processors
 
-    def _get_criteria(self, generation_config: GenerationConfig) -> StoppingCriteriaList:
+    @staticmethod
+    def _get_criteria(generation_config: GenerationConfig) -> StoppingCriteriaList:
         criteria = StoppingCriteriaList()
         if generation_config.eos_token_ix is not None:
             criteria.append(EosTokenCriteria(eos_token_ix=generation_config.eos_token_ix))
@@ -70,7 +76,13 @@ class GenerationArchitecture(Architecture):
         return criteria
 
     @torch.no_grad()
-    def generate(self, inputs: Tensor, streamer: Streamer | None = None, **kwargs: Any) -> Tensor:
+    def generate(
+        self,
+        inputs: Tensor,
+        *,
+        streamer: Streamer | None = None,
+        **kwargs: Unpack[GenerationConfigTypedDict],
+    ) -> Tensor:
         generation_config = self._get_generation_config(inputs, **kwargs)
         processors = self._get_processors(generation_config)
         criteria = self._get_criteria(generation_config)
@@ -100,7 +112,7 @@ class GenerationArchitecture(Architecture):
         return inputs
 
     @torch.no_grad()
-    def api(self, inputs: Tensor, **kwargs: Any) -> Generator[Tensor]:
+    def api(self, inputs: Tensor, **kwargs: Unpack[GenerationConfigTypedDict]) -> Generator[Tensor]:
         generation_config = self._get_generation_config(inputs, **kwargs)
         processors = self._get_processors(generation_config)
         criteria = self._get_criteria(generation_config)

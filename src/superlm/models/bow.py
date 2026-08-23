@@ -46,9 +46,9 @@ class Layer(nn.Module):
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_1 = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
         self.cbow = CausalBoW(config)
-        self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_2 = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
         self.ffnf = MLP(config)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -68,7 +68,7 @@ class BoW(Model):
         self.wte = Embedding(config)
         self.wpe = nn.Embedding(config.block_size, config.n_embd)
         self.layers = nn.ModuleList([Layer(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_f = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
 
     def forward(
         self,

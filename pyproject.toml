@@ -33,7 +33,8 @@ exclude = ["workspace.py", "models"]
 
 [tool.ruff]
 line-length = 100
-exclude = ["**/*.in"]
+exclude = ["test", "workspace", "**/*.in"]
+respect-gitignore = false
 
 [tool.ruff.lint]
 select = [
@@ -78,14 +79,12 @@ select = [
     "W",
 ]
 ignore = [
-    "any-type",                                # why not: sometimes we need
     "lowercase-imported-as-non-lowercase",     # why not: `import torch.nn.functional as F`
     "manual-from-import",                      # why not: `import torch.nn as nn`
-    "unsorted-dunder-all",                     # why not: sorted by category
-    "no-self-use",                             # why not: unified interface
-    "non-augmented-assignment",                # why not: unsafe on Tensor
     "undefined-local-with-import-star",        # why not: `from ... import *`
     "undefined-local-with-import-star-usage",  # why not: `from ... import *`
+    "unsorted-dunder-all",                     # why not: sorted by category
+    "non-augmented-assignment",                # why not: unsafe on Tensor
 ]
 preview = true
 
@@ -98,6 +97,7 @@ max-positional-args = 10
     "too-many-public-methods",
 ]
 "config.py" = [
+    "any-type",
     "raise-vanilla-args",
 ]
 "{run,test}/*.py" = [

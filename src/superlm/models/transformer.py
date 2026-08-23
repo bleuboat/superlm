@@ -113,9 +113,9 @@ class SuperlmLayer(GradientCheckpointingLayer):
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
-        self.ln_1 = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_1 = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
         self.attn = SuperlmAttention(config)
-        self.ln_2 = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_2 = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
         self.ffnf = SuperlmMLP(config)
 
     def forward(self, x: Tensor, pos_emb: tuple[Tensor, Tensor]) -> tuple[Tensor, Tensor]:
@@ -137,7 +137,7 @@ class SuperlmModel(Model):
         self.wte = Embedding(config)
         self.wpe = SuperlmRotaryEmbedding(config)
         self.layers = nn.ModuleList([SuperlmLayer(config) for _ in range(config.n_layer)])
-        self.ln_f = nn.RMSNorm(config.n_embd, eps=config.eps)
+        self.ln_f = nn.RMSNorm(config.n_embd, config.rms_norm_eps)
 
     def forward(
         self,

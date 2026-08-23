@@ -2,7 +2,7 @@ import json
 import torch
 from safetensors.torch import save_model, load_model
 
-from typing import Any, cast
+from typing import Unpack, cast
 from collections.abc import Callable, Generator, Sequence
 
 from .paths import *
@@ -101,7 +101,8 @@ class WorkSpace:
     def trainer(self, value: Trainer | None) -> None:
         self._trainer = value
 
-    def set_seed(self, seed: int) -> None:
+    @staticmethod
+    def set_seed(seed: int) -> None:
         torch.manual_seed(seed)
 
     def set_dtype(self, dtype: str) -> None:
@@ -130,7 +131,7 @@ class WorkSpace:
         other.copy(self)
         return other
 
-    def config(self, **configs: Any) -> None:
+    def config(self, **configs: Unpack[AllConfigTypedDict]) -> None:
         for k, v in configs.items():
             for config in (
                 self.model_config, self.generation_config, self.training_config, self.adam_config,
@@ -158,7 +159,13 @@ class WorkSpace:
         self.save()
         self.show_losses(self.trainer.losses)
 
-    def generate(self, inputs: str, *, stream: bool = False, **kwargs: Any) -> str:
+    def generate(
+        self,
+        inputs: str,
+        *,
+        stream: bool = False,
+        **kwargs: Unpack[GenerationConfigTypedDict],
+    ) -> str:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))
         streamer = self.streamer if stream else None
@@ -170,7 +177,7 @@ class WorkSpace:
         inputs: str,
         *,
         map: Callable[[str], str] | None = None,
-        **kwargs: Any,
+        **kwargs: Unpack[GenerationConfigTypedDict],
     ) -> Generator[str]:
         self.check()
         inputs_tensor = self.tokenizer([inputs], device=self.device, special_tokens=("bos",))

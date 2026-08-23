@@ -1,8 +1,10 @@
-__all__ = ${all}
+__all__ = [
+    ${all}
+]
 
 from .activations import ACTIVATIONS
 from types import UnionType
-from typing import Any, Never, Self
+from typing import Any, Never, Self, TypedDict, NotRequired, Unpack
 from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
 
 
@@ -83,7 +85,7 @@ class Config(MutableMapping[str, Any]):
                     f"got {type(param.get()).__name__}",
                 )
 
-    def _check_extras(self) -> None:
+    def _check_extras(self) -> None:  # ruff: ignore[no-self-use]
         return
 
     def check(self) -> None:
@@ -104,12 +106,6 @@ class Config(MutableMapping[str, Any]):
 
     def items(self) -> ItemsView[str, Any]:
         return self._data.items()
-
-    def update(self, other: Any = None, /, **kwargs: Any) -> None:
-        if other:
-            raise NotImplementedError("'other' argument is not implemented")
-        for k, v in kwargs.items():
-            self[k] = v
 
     def add_param(self, name: str, annotation: AnyClass, default: Any) -> None:
         self._data[name] = Parameter(annotation, default)

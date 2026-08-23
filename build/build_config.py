@@ -37,21 +37,27 @@ with file_config.open() as f:
             raise RuntimeError
         last_config[1].append(match.groups())  # type: ignore
 
-code = ""
+code = all = ""
 
 for config, data in configs.items():
+    code += f"\n\nclass {config}TypedDict(TypedDict):\n"
+    for name, annotation, _ in data[1]:
+        if not name.endswith("_ix"):
+            code += f"    {name}: NotRequired[{annotation}]\n"
+
     code += f"\n\nclass {config}(Config):\n"
     for name, annotation, _ in data[1]:
         code += (
             f"    {name}: {annotation}\n"
         )
-    code += "\n    def __init__(self) -> None:\n"
+    code += f"\n    def __init__(self, **kwargs: Unpack[{config}TypedDict]) -> None:\n"
     code += "        super().__init__()\n"
     for name, annotation, default in data[1]:
         origin = re.sub(r"\[.*?\]", "", annotation)
         code += (
             f'        self.add_param("{name}", {origin}, default={default})\n'
         )
+    code += "        self.update(**kwargs)\n"
     if data[0]:
         code += "\n    def _check_extras(self) -> None:\n"
         for check, message in data[0]:
@@ -61,6 +67,15 @@ for config, data in configs.items():
             )
 """
 
-all = str(list(configs.keys())).replace("'", '"')
+    all += f'"{config}",\n'
+    all += f'"{config}TypedDict",\n'
+
+code += "\n\nclass AllConfigTypedDict(TypedDict):\n"
+all += '"AllConfigTypedDict",\n'
+
+for data in configs.values():
+    for name, annotation, _ in data[1]:
+        if not name.endswith("_ix"):
+            code += f"    {name}: NotRequired[{annotation}]\n"
 
 templater.apply(file_py)
