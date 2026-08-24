@@ -33,14 +33,6 @@ typeCheckingMode = "strict"
 reportUnknownMemberType = false
 ignore = ["**/*.in"]
 
-[[tool.mypy.overrides]]
-module = "src.superlm.workspace"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "src.superlm.models.*"
-ignore_errors = true
-
 [tool.ruff]
 line-length = 100
 exclude = ["**/*.in"]
