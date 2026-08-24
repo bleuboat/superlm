@@ -38,6 +38,7 @@ class CausalLM(GenerationArchitecture):
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
+        logits_to_keep: int = 0,
         *,
         output_hidden_states: bool = False,
         output_attentions: bool = False,
@@ -47,13 +48,23 @@ class CausalLM(GenerationArchitecture):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
-        output_logits = cast(Tensor, outputs.logits)
+
+        if logits_to_keep == 1:
+            slice_indices = -1
+        elif logits_to_keep == 0:
+            slice_indices = slice(None)
+        else:
+            slice_indices = slice(-logits_to_keep, None)
+
+        output_logits = cast(Tensor, outputs.logits)[:, slice_indices, :]
+
         if labels is None:
             loss = None
             logits = self.lm_head(output_logits)
         else:
             loss = self.loss_function(output_logits, self.lm_head.weight, labels)
             logits = None
+
         return ModelOutput(
             logits=logits,
             loss=loss,

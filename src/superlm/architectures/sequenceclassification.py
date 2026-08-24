@@ -37,6 +37,7 @@ class SequenceClassification(Architecture):
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
+        logits_to_keep: int = 0,
         *,
         output_hidden_states: bool = False,
         output_attentions: bool = False,

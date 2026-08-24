@@ -57,7 +57,7 @@ for config, data in configs.items():
         code += (
             f'        self.add_param("{name}", {origin}, default={default})\n'
         )
-    code += "        self.update(**kwargs)\n"
+    code += "        self.update(kwargs)\n"
     if data[0]:
         code += "\n    def _check_extras(self) -> None:\n"
         for check, message in data[0]:

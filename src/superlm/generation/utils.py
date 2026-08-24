@@ -93,9 +93,9 @@ class GenerationArchitecture(Architecture):
         do_sample = generation_config.do_sample
         unfinished = True
         while unfinished:
-            outputs = self(inputs)
+            outputs = self(inputs, logits_to_keep=1)
             logits = cast(Tensor, outputs.logits)
-            score = processors(inputs, logits[:, -1, :])
+            score = processors(inputs, logits)
             if do_sample:
                 probs = F.softmax(score, dim=-1)
                 next_token = torch.multinomial(probs, num_samples=1)

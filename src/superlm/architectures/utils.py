@@ -61,6 +61,7 @@ class Architecture(nn.Module):
         self,
         input_ids: Tensor,
         labels: Tensor | None = None,
+        logits_to_keep: int = 0,
         *,
         output_hidden_states: bool = False,
         output_attentions: bool = False,
@@ -68,6 +69,7 @@ class Architecture(nn.Module):
         return self._wrapped_call_impl(
             input_ids=input_ids,
             labels=labels,
+            logits_to_keep=logits_to_keep,
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
