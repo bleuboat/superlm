@@ -7,6 +7,7 @@ __pycache__/
 .env
 .python-version
 
+src/superlm/__init__.py
 src/superlm/config.py
 src/superlm/dtypes.py
 src/superlm/paths.py

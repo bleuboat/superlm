@@ -159,7 +159,9 @@ class SuperlmModel(Model):
         for layer in self.layers:
             if output_hidden_states:
                 all_hidden_states.append(hidden_state)
+
             hidden_state, attention = layer(hidden_state, pos_emb)
+
             if output_attentions:
                 all_attentions.append(attention)
 
