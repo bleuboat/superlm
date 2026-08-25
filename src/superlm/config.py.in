@@ -30,7 +30,6 @@ class Parameter:
 
 
 class Config(MutableMapping[str, Any]):
-    __slots__ = ("_data",)
     _data: dict[str, Parameter]
 
     def __init__(self) -> None:
@@ -100,7 +99,6 @@ class Config(MutableMapping[str, Any]):
 
 
 class ConfigGroupBase(MutableMapping[str, Config]):
-    __slots__ = ("_data",)
     _data: dict[str, Config]
 
     def __init__(self) -> None:
