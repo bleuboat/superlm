@@ -78,4 +78,13 @@ for data in configs.values():
         if not name.endswith("_ix"):
             code += f"    {name}: NotRequired[{annotation}]\n"
 
+code += "\n\nclass ConfigGroup(ConfigGroupBase):\n"
+code += "    def __init__(self) -> None:\n"
+code += "        super().__init__()\n"
+
+for config in configs:
+    code += f"        self.{config[:-6].lower()} = {config}()\n"
+
+all += '"ConfigGroup",\n'
+
 templater.apply(file_py)

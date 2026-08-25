@@ -5,7 +5,7 @@ __all__ = [
 from .activations import ACTIVATIONS
 from types import UnionType
 from typing import Any, Never, Self, TypedDict, NotRequired, Unpack
-from collections.abc import Iterator, KeysView, ValuesView, ItemsView, MutableMapping
+from collections.abc import Iterator, MutableMapping
 
 
 type AnyClass = type | UnionType
@@ -98,17 +98,77 @@ class Config(MutableMapping[str, Any]):
             out[k] = v.value
         return out
 
-    def keys(self) -> KeysView[str]:
-        return self._data.keys()
-
-    def values(self) -> ValuesView[Any]:
-        return self._data.values()
-
-    def items(self) -> ItemsView[str, Any]:
-        return self._data.items()
-
     def add_param(self, name: str, annotation: AnyClass, default: Any) -> None:
         self._data[name] = Parameter(annotation, default)
+
+
+class ConfigGroupBase(MutableMapping[str, Config]):
+    __slots__ = ("_data",)
+    _data: dict[str, Config]
+
+    def __init__(self) -> None:
+        super().__setattr__("_data", {})
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self._data[key] = value
+
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __delitem__(self, key: str) -> Never:
+        raise NotImplementedError("don't delete config's items")
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self._data[key] = value
+
+    def __getattr__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __len__(self) -> int:
+        return self._data.__len__()
+
+    def __iter__(self) -> Iterator[str]:
+        return self._data.__iter__()
+
+    def __contains__(self, key: Any) -> bool:
+        return self._data.__contains__(key)
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}(\n  {",\n  ".join(f"{k}={self[k]}" for k in self)},\n)"
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({", ".join(f"{k}={self[k]!r}" for k in self)})"
+
+    def __call__(self, *keys: str, **configs: Unpack[AllConfigTypedDict]) -> tuple[Any] | None:
+        if len(keys) > 0 and len(configs) > 0:
+            raise RuntimeError
+        if keys:
+            return self._get(keys)
+        if configs:
+            return self._set(configs)
+        return None
+
+    def _get(self, keys: tuple[str, ...]) -> tuple[Any]:
+        out: list[Any] = []
+        for k in keys:
+            for config in self.values():
+                if k in config:
+                    out.append(config[k])
+                    break
+            else:
+                raise KeyError(k)
+        return tuple(out)
+
+    def _set(self, configs: AllConfigTypedDict) -> None:
+        for k in configs:
+            for config in self.values():
+                if k in config:
+                    config[k] = configs[k]
+                    break
+            else:
+                raise KeyError(k)
+        for config in self.values():
+            config.check()
 
 
 ${code}

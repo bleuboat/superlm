@@ -30,28 +30,17 @@ class WorkSpace:
         self,
         path: str,
         *,
-        seed: int | None = None,
+        seed: str | int | None = None,
         dtype: str = DEFAULT_DTYPE,
         device: str = DEFAULT_DEVICE,
     ) -> None:
-        self.paths = Paths(*path.split("/"))
-
-        if seed is not None:
-            torch.manual_seed(seed)
-
+        self.set_seed(seed)
         self.set_dtype(dtype)
         self.set_device(device)
 
-        self.model_config = ModelConfig()
-        self.generation_config = GenerationConfig()
-        self.training_config = TrainingConfig()
-        self.adam_config = AdamConfig()
-        self.configs = (
-            self.model_config,
-            self.generation_config,
-            self.training_config,
-            self.adam_config,
-        )
+        self.paths = Paths(*path.split("/"))
+        self.paths.root.mkdir(exist_ok=True)
+        self.config = ConfigGroup()
 
         self._inputs = None
         self._tokenizer = None
@@ -59,36 +48,34 @@ class WorkSpace:
         self._model = None
         self._trainer = None
 
-        self.paths.root.mkdir(exist_ok=True)
-
     @property
     def inputs(self) -> dict[str, str]:
         if self._inputs is None:
-            self.get_inputs()
+            self._get_inputs()
         return cast(dict[str, str], self._inputs)
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self._tokenizer is None:
-            self.setup_tokenizer()
+            self._setup_tokenizer()
         return cast(Tokenizer, self._tokenizer)
 
     @property
     def streamer(self) -> Streamer:
         if self._streamer is None:
-            self.setup_streamer()
+            self._setup_streamer()
         return cast(Streamer, self._streamer)
 
     @property
     def model(self) -> CausalLM:
         if self._model is None:
-            self.setup_model()
+            self._setup_model()
         return cast(CausalLM, self._model)
 
     @property
     def trainer(self) -> Trainer:
         if self._trainer is None:
-            self.setup_trainer()
+            self._setup_trainer()
         return cast(Trainer, self._trainer)
 
     @inputs.setter
@@ -111,9 +98,45 @@ class WorkSpace:
     def trainer(self, value: Trainer | None) -> None:
         self._trainer = value
 
+    def _get_inputs(self) -> None:
+        if not self.paths.inputs.exists():
+            raise FileNotFoundError(2, "input not found", self.paths.inputs)
+
+        inputs: dict[str, str] = {}
+        files = self.paths.inputs.glob("*.txt")
+        for file in files:
+            content = file.read_text(encoding="utf-8")
+            inputs[file.stem] = content
+
+        self.inputs = inputs
+
+    def _setup_tokenizer(self) -> None:
+        self.tokenizer = Tokenizer.from_data(self.inputs.values())
+
+    def _setup_streamer(self) -> None:
+        self.streamer = Streamer(self.tokenizer)
+
+    def _setup_model(self) -> None:
+        self.model = CausalLM(
+            self.tokenizer,
+            self.config.model,
+            self.config.generation,
+        ).to(self.device)
+
+    def _setup_trainer(self) -> None:
+        self.trainer = Trainer(
+            self.tokenizer,
+            self.model,
+            self.paths.checkpoint,
+            self.inputs.values(),
+            self.config.training,
+            self.config.adam,
+        )
+
     @staticmethod
-    def set_seed(seed: int) -> None:
-        torch.manual_seed(seed)
+    def set_seed(seed: str | int | None) -> None:
+        if seed is not None:
+            torch.manual_seed(seed)
 
     def set_dtype(self, dtype: str) -> None:
         self.dtype = DTYPES[dtype]
@@ -123,9 +146,6 @@ class WorkSpace:
         self.device = torch.device(device)
         if getattr(self, "_model", None) is not None:
             self.model.to(self.device)
-
-    def set_model_name(self, model_name: str) -> None:
-        self.paths.model_name = model_name
 
     def copy(self, other: WorkSpace | str) -> WorkSpace:
         import shutil  # ruff: ignore[import-outside-top-level]
@@ -140,15 +160,6 @@ class WorkSpace:
             other = WorkSpace(other)
         other.copy(self)
         return other
-
-    def config(self, **configs: Unpack[AllConfigTypedDict]) -> None:
-        for k, v in configs.items():
-            for config in self.configs:
-                if k in config:
-                    config[k] = v
-                    break
-        for config in self.configs:
-            config.check()
 
     def train(self, steps: Sequence[int] | None = None) -> None:
         self.save()
@@ -186,38 +197,6 @@ class WorkSpace:
             else:
                 yield map(out)
 
-    def get_inputs(self) -> None:
-        if not self.paths.inputs.exists():
-            raise FileNotFoundError(2, "input not found", self.paths.inputs)
-
-        inputs: dict[str, str] = {}
-        files = self.paths.inputs.glob("*.txt")
-        for file in files:
-            content = file.read_text(encoding="utf-8")
-            inputs[file.stem] = content
-
-        self.inputs = inputs
-
-    def setup_tokenizer(self) -> None:
-        self.tokenizer = Tokenizer.from_data(self.inputs.values())
-
-    def setup_streamer(self) -> None:
-        self.streamer = Streamer(self.tokenizer)
-
-    def setup_model(self) -> None:
-        self.model = CausalLM(self.tokenizer, self.model_config, self.generation_config)
-        self.model.to(self.device)
-
-    def setup_trainer(self) -> None:
-        self.trainer = Trainer(
-            self.tokenizer,
-            self.model,
-            self.paths.checkpoint,
-            self.inputs.values(),
-            self.training_config,
-            self.adam_config,
-        )
-
     def save(self) -> None:
         self.paths.model_root.mkdir(exist_ok=True)
         self.paths.vocab.write_text(
@@ -237,11 +216,11 @@ class WorkSpace:
                 json.loads(self.paths.vocab.read_text(encoding="utf-8")),
             )
         if self.paths.config.exists():
-            self.model_config = ModelConfig(
+            self.config.model = ModelConfig(
                 **json.loads(self.paths.config.read_text()),
             )
         if self.paths.generation_config.exists():
-            self.generation_config = GenerationConfig(
+            self.config.generation = GenerationConfig(
                 **json.loads(self.paths.generation_config.read_text()),
             )
         if self.paths.model.exists():
