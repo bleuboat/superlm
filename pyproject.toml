@@ -31,11 +31,11 @@ packages = {find = {where = ["src"]}}
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
-ignore = ["**/*.in"]
+ignore = ["**/*.in", ".venv/"]
 
 [tool.ruff]
 line-length = 100
-exclude = ["**/*.in"]
+exclude = ["**/*.in", ".venv/"]
 respect-gitignore = false
 
 [tool.ruff.lint]
