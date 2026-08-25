@@ -2,7 +2,7 @@ import json
 import torch
 from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
 
-from typing import Unpack, cast
+from typing import Unpack
 from collections.abc import Callable, Generator, Sequence
 
 from .architectures import *
@@ -29,17 +29,16 @@ class WorkSpace:
     def __init__(
         self,
         path: str,
-        *,
-        seed: str | int | None = None,
-        dtype: str = DEFAULT_DTYPE,
-        device: str = DEFAULT_DEVICE,
+        /, *,
+        seed: int | None = None,
+        dtype: str | None = None,
+        device: str | None = None,
     ) -> None:
         self.set_seed(seed)
         self.set_dtype(dtype)
         self.set_device(device)
 
         self.paths = Paths(*path.split("/"))
-        self.paths.root.mkdir(exist_ok=True)
         self.config = ConfigGroup()
 
         self._inputs = None
@@ -51,32 +50,32 @@ class WorkSpace:
     @property
     def inputs(self) -> dict[str, str]:
         if self._inputs is None:
-            self._get_inputs()
-        return cast(dict[str, str], self._inputs)
+            self._inputs = self._get_inputs()
+        return self._inputs
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self._tokenizer is None:
-            self._setup_tokenizer()
-        return cast(Tokenizer, self._tokenizer)
+            self._tokenizer = self._get_tokenizer()
+        return self._tokenizer
 
     @property
     def streamer(self) -> Streamer:
         if self._streamer is None:
-            self._setup_streamer()
-        return cast(Streamer, self._streamer)
+            self._streamer = self._get_streamer()
+        return self._streamer
 
     @property
     def model(self) -> CausalLM:
         if self._model is None:
-            self._setup_model()
-        return cast(CausalLM, self._model)
+            self._model = self._get_model()
+        return self._model
 
     @property
     def trainer(self) -> Trainer:
         if self._trainer is None:
-            self._setup_trainer()
-        return cast(Trainer, self._trainer)
+            self._trainer = self._get_trainer()
+        return self._trainer
 
     @inputs.setter
     def inputs(self, value: dict[str, str] | None) -> None:
@@ -98,33 +97,31 @@ class WorkSpace:
     def trainer(self, value: Trainer | None) -> None:
         self._trainer = value
 
-    def _get_inputs(self) -> None:
+    def _get_inputs(self) -> dict[str, str]:
         if not self.paths.inputs.exists():
             raise FileNotFoundError(2, "input not found", self.paths.inputs)
-
         inputs: dict[str, str] = {}
         files = self.paths.inputs.glob("*.txt")
         for file in files:
             content = file.read_text(encoding="utf-8")
             inputs[file.stem] = content
+        return inputs
 
-        self.inputs = inputs
+    def _get_tokenizer(self) -> Tokenizer:
+        return Tokenizer.from_data(self.inputs.values())
 
-    def _setup_tokenizer(self) -> None:
-        self.tokenizer = Tokenizer.from_data(self.inputs.values())
+    def _get_streamer(self) -> Streamer:
+        return Streamer(self.tokenizer)
 
-    def _setup_streamer(self) -> None:
-        self.streamer = Streamer(self.tokenizer)
-
-    def _setup_model(self) -> None:
-        self.model = CausalLM(
+    def _get_model(self) -> CausalLM:
+        return CausalLM(
             self.tokenizer,
             self.config.model,
             self.config.generation,
         ).to(self.device)
 
-    def _setup_trainer(self) -> None:
-        self.trainer = Trainer(
+    def _get_trainer(self) -> Trainer:
+        return Trainer(
             self.tokenizer,
             self.model,
             self.paths.checkpoint,
@@ -134,32 +131,23 @@ class WorkSpace:
         )
 
     @staticmethod
-    def set_seed(seed: str | int | None) -> None:
-        if seed is not None:
-            torch.manual_seed(seed)
+    def set_seed(seed: int | None) -> None:
+        if seed is None:
+            return
+        torch.manual_seed(seed)
 
-    def set_dtype(self, dtype: str) -> None:
+    def set_dtype(self, dtype: str | None) -> None:
+        if dtype is None:
+            dtype = DEFAULT_DTYPE
         self.dtype = DTYPES[dtype]
         torch.set_default_dtype(self.dtype)
 
-    def set_device(self, device: str) -> None:
+    def set_device(self, device: str | None) -> None:
+        if device is None:
+            device = DEFAULT_DEVICE
         self.device = torch.device(device)
         if getattr(self, "_model", None) is not None:
             self.model.to(self.device)
-
-    def copy(self, other: WorkSpace | str) -> WorkSpace:
-        import shutil  # ruff: ignore[import-outside-top-level]
-        if isinstance(other, str):
-            other = WorkSpace(other)
-        shutil.copytree(other.paths.root, self.paths.root, dirs_exist_ok=True)
-        self.load()
-        return self
-
-    def clone(self, other: WorkSpace | str) -> WorkSpace:
-        if isinstance(other, str):
-            other = WorkSpace(other)
-        other.copy(self)
-        return other
 
     def train(self, steps: Sequence[int] | None = None) -> None:
         self.save()
@@ -211,20 +199,23 @@ class WorkSpace:
         save_model(self.model, str(self.paths.model))
 
     def load(self) -> None:
-        if self.paths.vocab.exists():
-            self.tokenizer = Tokenizer(
-                json.loads(self.paths.vocab.read_text(encoding="utf-8")),
-            )
-        if self.paths.config.exists():
-            self.config.model = ModelConfig(
-                **json.loads(self.paths.config.read_text()),
-            )
-        if self.paths.generation_config.exists():
-            self.config.generation = GenerationConfig(
-                **json.loads(self.paths.generation_config.read_text()),
-            )
-        if self.paths.model.exists():
-            load_model(self.model, self.paths.model)
+        if not all((
+            self.paths.vocab.exists(),
+            self.paths.config.exists(),
+            self.paths.generation_config.exists(),
+            self.paths.model.exists(),
+        )):
+            return
+        self.tokenizer = Tokenizer(
+            json.loads(self.paths.vocab.read_text(encoding="utf-8")),
+        )
+        self.config.model = ModelConfig(
+            **json.loads(self.paths.config.read_text()),
+        )
+        self.config.generation = GenerationConfig(
+            **json.loads(self.paths.generation_config.read_text()),
+        )
+        load_model(self.model, self.paths.model)
 
     def info(self) -> None:
         print("----")

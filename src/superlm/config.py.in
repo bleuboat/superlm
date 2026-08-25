@@ -8,14 +8,11 @@ from typing import Any, Never, Self, TypedDict, NotRequired, Unpack
 from collections.abc import Iterator, MutableMapping
 
 
-type AnyClass = type | UnionType
-
-
 class Parameter:
     __slots__ = ("annotation", "default", "value")
     __sentinel = object()
 
-    def __init__(self, annotation: AnyClass, default: Any) -> None:
+    def __init__(self, annotation: type | UnionType, default: Any) -> None:
         self.value = self.__sentinel
         self.annotation = annotation
         if callable(default):
@@ -98,7 +95,7 @@ class Config(MutableMapping[str, Any]):
             out[k] = v.value
         return out
 
-    def add_param(self, name: str, annotation: AnyClass, default: Any) -> None:
+    def add_param(self, name: str, annotation: type | UnionType, default: Any) -> None:
         self._data[name] = Parameter(annotation, default)
 
 
@@ -140,7 +137,7 @@ class ConfigGroupBase(MutableMapping[str, Config]):
         return f"{type(self).__name__}({", ".join(f"{k}={self[k]!r}" for k in self)})"
 
     def __call__(self, *keys: str, **configs: Unpack[AllConfigTypedDict]) -> tuple[Any] | None:
-        if len(keys) > 0 and len(configs) > 0:
+        if keys and configs:
             raise RuntimeError
         if keys:
             return self._get(keys)
