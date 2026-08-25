@@ -152,8 +152,7 @@ class WorkSpace:
     def train(self, steps: Sequence[int] | None = None) -> None:
         self.save()
         self.model.train()
-        trained = self.trainer.train(steps)
-        self.model.load_state_dict(trained)
+        self.trainer.train(steps)
         self.model.eval()
         self.save()
         self.show_losses(self.trainer.losses)

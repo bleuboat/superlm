@@ -94,7 +94,7 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, steps: Sequence[int] | None = None) -> dict[str, Tensor]:
+    def train(self, steps: Sequence[int] | None = None) -> None:
         if self.checkpoint_path.exists():
             self.restart()
         if steps is None:
@@ -113,7 +113,6 @@ class Trainer:
         self.log()
         self.sample()
         self.checkpoint_path.unlink()
-        return self.model.state_dict()
 
     def log(self) -> None:
         self.losses.append((self.step, self.smooth_loss))
