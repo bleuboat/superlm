@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import cast
 from superlm.config import ModelConfig, GenerationConfig
-from superlm.tokenizer import Tokenizer
 from superlm.models import ModelOutput
 from .utils import Architecture
 
@@ -22,15 +21,10 @@ class SequenceClassificationLoss:
 
 
 class SequenceClassification(Architecture):
-    def __init__(
-        self,
-        tokenizer: Tokenizer,
-        config: ModelConfig,
-        generation_config: GenerationConfig,
-    ) -> None:
-        super().__init__(tokenizer, config, generation_config)
-        self.score = nn.Linear(self.config.n_embd, self.config.num_labels, bias=False)
-        self.loss_function = SequenceClassificationLoss(self.config)
+    def __init__(self, config: ModelConfig, generation_config: GenerationConfig) -> None:
+        super().__init__(config, generation_config)
+        self.score = nn.Linear(config.n_embd, config.num_labels, bias=False)
+        self.loss_function = SequenceClassificationLoss(config)
 
     def forward(
         self,

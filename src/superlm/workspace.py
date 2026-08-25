@@ -114,11 +114,8 @@ class WorkSpace:
         return Streamer(self.tokenizer)
 
     def _get_model(self) -> CausalLM:
-        return CausalLM(
-            self.tokenizer,
-            self.config.model,
-            self.config.generation,
-        ).to(self.device)
+        self.tokenizer.update_config(self.config)
+        return CausalLM(self.config.model, self.config.generation).to(self.device)
 
     def _get_trainer(self) -> Trainer:
         return Trainer(

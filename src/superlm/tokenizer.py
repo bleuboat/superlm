@@ -4,6 +4,7 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType
 from typing import cast
 from collections.abc import Container, Iterable
+from .config import ConfigGroup
 
 
 __all__ = ["Tokenizer"]
@@ -76,8 +77,16 @@ class Tokenizer:
     __call__ = encode
 
     @classmethod
-    def from_data(cls, data: str | Iterable[str]) -> Tokenizer:
-        data = data if isinstance(data, str) else "\n".join(data)
-        tokens = sorted(set(PATTERN.findall(data)))
+    def from_data(cls, data: Iterable[str]) -> Tokenizer:
+        tokens = sorted({token for text in data for token in PATTERN.findall(text)})
         tokens.extend(("<BOS>", "<EOS>", "<PAD>", "<UNK>"))
         return cls(tokens)
+
+    def update_config(self, config: ConfigGroup) -> None:
+        config.model.vocab_size = self.vocab_size
+        config.model.bos_token_ix = self.bos_token_ix
+        config.model.eos_token_ix = self.eos_token_ix
+        config.model.pad_token_ix = self.pad_token_ix
+        config.generation.bos_token_ix = self.bos_token_ix
+        config.generation.eos_token_ix = self.eos_token_ix
+        config.generation.pad_token_ix = self.pad_token_ix

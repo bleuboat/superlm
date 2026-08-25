@@ -24,14 +24,13 @@ superlm = "superlm:main"
 
 [tool]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}}
-
 [tool.pyright]
 typeCheckingMode = "strict"
 reportUnknownMemberType = false
 ignore = ["**/*.in", ".venv/"]
+
+[tool.uv]
+dev-dependencies = ["ruff"]
 
 [tool.ruff]
 line-length = 100
