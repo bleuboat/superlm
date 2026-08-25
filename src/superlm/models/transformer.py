@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import *
+from .utils import Embedding, GradientCheckpointingLayer, Model, ModelOutput
 
 
 class SuperlmRotaryEmbedding(nn.Module):
@@ -125,7 +125,6 @@ class SuperlmLayer(GradientCheckpointingLayer):
         return x, attn
 
 
-@register_model
 class SuperlmModel(Model):
     wte: Embedding
     wpe: SuperlmRotaryEmbedding

@@ -1,22 +1,26 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from torch import Tensor
 from typing import Unpack, cast
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 
 from superlm.streamer import Streamer
 from superlm.config import GenerationConfig, GenerationConfigTypedDict
-from superlm.architectures import Architecture
+from superlm.models import ModelOutput
 
 from .logits_process import *
 from .stopping_criteria import *
 
 
-__all__ = ["GenerationArchitecture"]
+__all__ = ["GenerationMixin"]
 
 
-class GenerationArchitecture(Architecture):
+class GenerationMixin(nn.Module):
+    generation_config: GenerationConfig
+    __call__: Callable[..., ModelOutput]
+
     def _get_generation_config(
         self,
         inputs: Tensor,

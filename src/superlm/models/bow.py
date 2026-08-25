@@ -5,7 +5,7 @@ from torch import Tensor
 from collections.abc import Callable
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
-from .utils import *
+from .utils import Embedding, GradientCheckpointingLayer, Model, ModelOutput
 
 
 class CausalBoW(nn.Module):
@@ -41,7 +41,7 @@ class MLP(nn.Module):
         return self.down(self.act(self.gate(x)) * self.up(x))
 
 
-class Layer(nn.Module):
+class Layer(GradientCheckpointingLayer):
     __call__: Callable[[Tensor], Tensor]
 
     def __init__(self, config: ModelConfig) -> None:
@@ -56,7 +56,6 @@ class Layer(nn.Module):
         return x + self.ffnf(self.ln_2(x))
 
 
-@register_model
 class BoW(Model):
     wte: Embedding
     wpe: nn.Embedding

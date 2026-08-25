@@ -6,7 +6,7 @@ from typing import cast
 from superlm.config import ModelConfig, GenerationConfig
 from superlm.tokenizer import Tokenizer
 from superlm.models import ModelOutput
-from .utils import Architecture, register_architecture
+from .utils import Architecture
 
 
 class SequenceClassificationLoss:
@@ -21,7 +21,6 @@ class SequenceClassificationLoss:
         return F.binary_cross_entropy_with_logits(logits, labels)
 
 
-@register_architecture
 class SequenceClassification(Architecture):
     def __init__(
         self,

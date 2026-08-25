@@ -12,25 +12,9 @@ from functools import partial
 from superlm.config import ModelConfig
 
 
-__all__ = [
-    "register_model",
-    "auto_model",
-    "GradientCheckpointingLayer",
-    "Embedding",
-    "ModelOutput",
-    "Model",
-]
+__all__ = ["GradientCheckpointingLayer", "Embedding", "ModelOutput", "Model"]
 
 MODEL_CLASSES: dict[str, type[Model]] = {}
-
-
-def register_model[T: type[Model]](model_class: T) -> T:
-    MODEL_CLASSES[model_class.__module__.split(".")[-1]] = model_class
-    return model_class
-
-
-def auto_model(config: ModelConfig) -> Model:
-    return MODEL_CLASSES[config.model_type](config)
 
 
 class GradientCheckpointingLayer(nn.Module):
@@ -89,3 +73,10 @@ class Model(nn.Module):
             output_hidden_states=output_hidden_states,
             output_attentions=output_attentions,
         )
+
+    @staticmethod
+    def auto(config: ModelConfig) -> Model:
+        return MODEL_CLASSES[config.model_type](config)
+
+    def __init_subclass__(cls) -> None:
+        MODEL_CLASSES[cls.__module__.split(".")[-1]] = cls

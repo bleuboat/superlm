@@ -5,7 +5,7 @@ from typing import cast
 from superlm.config import ModelConfig, GenerationConfig
 from superlm.tokenizer import Tokenizer
 from superlm.models import ModelOutput
-from .utils import Architecture, register_architecture
+from .utils import Architecture
 
 
 class TokenClassificationLoss:
@@ -19,7 +19,6 @@ class TokenClassificationLoss:
         return F.cross_entropy(logits, labels, ignore_index=self.ignore_index)
 
 
-@register_architecture
 class TokenClassification(Architecture):
     def __init__(
         self,

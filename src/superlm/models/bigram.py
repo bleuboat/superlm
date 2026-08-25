@@ -1,9 +1,8 @@
 from torch import Tensor
 from superlm.config import ModelConfig
-from .utils import *
+from .utils import Embedding, Model, ModelOutput
 
 
-@register_model
 class Bigram(Model):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()

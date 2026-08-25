@@ -4,30 +4,12 @@ from torch import Tensor
 
 from superlm.tokenizer import Tokenizer
 from superlm.config import ModelConfig, GenerationConfig
-from superlm.models import ModelOutput, GradientCheckpointingLayer, auto_model
+from superlm.models import GradientCheckpointingLayer, Model, ModelOutput
 
 
-__all__ = [
-    "register_architecture",
-    "auto_architecture",
-    "Architecture",
-]
-
+__all__ = ["Architecture"]
 
 ARCHITECTURE_CLASSES: dict[str, type[Architecture]] = {}
-
-
-def register_architecture[T: type[Architecture]](architecture_class: T) -> T:
-    ARCHITECTURE_CLASSES[architecture_class.__name__.lower()] = architecture_class
-    return architecture_class
-
-
-def auto_architecture(
-    tokenizer: Tokenizer,
-    config: ModelConfig,
-    generation_config: GenerationConfig,
-) -> Architecture:
-    return ARCHITECTURE_CLASSES[config.architecture](tokenizer, config, generation_config)
 
 
 class Architecture(nn.Module):
@@ -50,7 +32,7 @@ class Architecture(nn.Module):
         self.generation_config.eos_token_ix = tokenizer.eos_token_ix
         self.generation_config.pad_token_ix = tokenizer.pad_token_ix
 
-        self.model = auto_model(self.config)
+        self.model = Model.auto(self.config)
 
         if self.config.gradient_checkpointing:
             for module in self.model.modules():
@@ -85,3 +67,14 @@ class Architecture(nn.Module):
     @property
     def dtype(self) -> torch.dtype:
         return next(p.dtype for p in self.parameters() if p.is_floating_point())
+
+    @staticmethod
+    def auto(
+        tokenizer: Tokenizer,
+        config: ModelConfig,
+        generation_config: GenerationConfig,
+    ) -> Architecture:
+        return ARCHITECTURE_CLASSES[config.architecture](tokenizer, config, generation_config)
+
+    def __init_subclass__(cls) -> None:
+        ARCHITECTURE_CLASSES[cls.__name__.lower()] = cls

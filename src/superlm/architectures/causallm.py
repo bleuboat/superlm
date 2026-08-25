@@ -4,9 +4,9 @@ from torch import Tensor
 from typing import cast
 from superlm.config import ModelConfig, GenerationConfig
 from superlm.tokenizer import Tokenizer
-from superlm.generation import GenerationArchitecture
+from superlm.generation import GenerationMixin
 from superlm.models import ModelOutput
-from .utils import register_architecture
+from .utils import Architecture
 
 
 class CausalLMLoss:
@@ -20,8 +20,7 @@ class CausalLMLoss:
         return F.linear_cross_entropy(logits, weight, labels, ignore_index=self.ignore_index)
 
 
-@register_architecture
-class CausalLM(GenerationArchitecture):
+class CausalLM(Architecture, GenerationMixin):
     def __init__(
         self,
         tokenizer: Tokenizer,
