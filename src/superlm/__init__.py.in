@@ -1,6 +1,4 @@
-"""
-${description}
-"""
+"""${description}"""
 
 from .workspace import WorkSpace
 

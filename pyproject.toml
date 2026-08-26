@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "superlm"
 version = "0.6.0"
-description = "SuperLM Model"
+description = "SuperLM Model."
 readme = "README.md"
 authors = [
     { name = "bleuboat", email = "3751541788@qq.com" }
@@ -28,6 +28,7 @@ ignore = ["**/*.in", ".venv/"]
 
 [tool.ruff]
 line-length = 100
+respect-gitignore = false
 exclude = ["**/*.in", ".venv/"]
 
 [tool.ruff.lint]
@@ -38,8 +39,10 @@ select = [
     "C4",
     "C90",
     "COM",
+    "D",
     "DOC",
     "E",
+    "EM",
     "F",
     "FBT",
     "FIX",
@@ -48,16 +51,17 @@ select = [
     "G",
     "I",
     "ICN",
-    "INP",
     "ISC",
     "LOG",
     "N",
     "PERF",
     "PIE",
+    "PGH",
     "PLC",
     "PLE",
     "PLR",
     "PLW",
+    "PT",
     "PTH",
     "PYI",
     "Q",
@@ -68,6 +72,7 @@ select = [
     "SIM",
     "SLF",
     "SLOT",
+    "T10",
     "TID",
     "TRY",
     "UP",
@@ -79,17 +84,12 @@ ignore = [
     "undefined-local-with-import-star",        # why not: `from ... import *`
     "undefined-local-with-import-star-usage",  # why not: `from ... import *`
     "non-augmented-assignment",                # why not: unsafe on Tensor
+    "D1",                                      # why not: too much docstring
 ]
 preview = true
 
-[tool.ruff.lint.per-file-ignores]
-"config.py" = [
-    "any-type",
-    "raise-vanilla-args",
-]
-"{run,test}/*.py" = [
-    "implicit-namespace-package",
-]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [dependency-groups]
 dev = [

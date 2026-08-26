@@ -38,7 +38,7 @@ with file_config.open() as f:
         match = config_pattern.fullmatch(line)
         if match is None:
             raise RuntimeError
-        last_config[1].append(match.groups())  # type: ignore
+        last_config[1].append(match.groups())  # pyright: ignore[reportArgumentType]
 
 code = all = ""
 
@@ -62,10 +62,12 @@ for config, data in configs.items():
         )
     code += "        self.update(kwargs)\n"
     if data[0]:
-        code += "\n    def _check_extras(self) -> None:\n"
+        code += "\n    def check(self) -> None:\n"
+        code += "        super().check()\n"
         for check, message in data[0]:
             code += f"""        if {check}:
-            raise ValueError(f"{message}")
+            msg = f"{message}"
+            raise ValueError(msg)
 """
 
     all += f'"{config}",\n'

@@ -1,4 +1,9 @@
-__all__ = [
+# ruff: file-ignore[any-type]
+# ruff: file-ignore[line-too-long]
+# ruff: file-ignore[complex-structure]
+# ruff: file-ignore[too-many-branches]
+
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     ${all}
 ]
 
@@ -43,7 +48,7 @@ class Config(MutableMapping[str, Any]):
         return self._data[key].get()
 
     def __delitem__(self, key: str) -> Never:
-        raise NotImplementedError("don't delete config's items")
+        raise NotImplementedError
 
     def __setattr__(self, key: str, value: Any) -> None:
         self[key] = value
@@ -76,17 +81,14 @@ class Config(MutableMapping[str, Any]):
         return None
 
     def _get(self, keys: tuple[str, ...]) -> tuple[Any]:
-        out: list[Any] = []
-        for k in keys:
-            out.append(self[k])
-        return tuple(out)
+        return tuple(self[k] for k in keys)
 
     def _set(self, configs: AllConfigTypedDict) -> None:
         for k in configs:
             self[k] = configs[k]
         self.check()
 
-    def _check_params(self) -> None:
+    def check(self) -> None:
         for name, param in self._data.items():
             annotation = param.annotation
             if not isinstance(param.get(), annotation):
@@ -94,17 +96,11 @@ class Config(MutableMapping[str, Any]):
                     types = annotation.__args__
                 else:
                     types = (annotation.__name__,)
-                raise TypeError(
+                msg = (
                     f"'{name}' must be {" or ".join(f"a {type}" for type in types)}, "
-                    f"got {type(param.get()).__name__}",
+                    f"got {type(param.get()).__name__}"
                 )
-
-    def _check_extras(self) -> None:
-        return
-
-    def check(self) -> None:
-        self._check_params()
-        self._check_extras()
+                raise TypeError(msg)
 
     def copy(self) -> Self:
         out = type(self)()
@@ -126,7 +122,7 @@ class ConfigGroupBase(MutableMapping[str, Config]):
         return self._data[key]
 
     def __delitem__(self, key: str) -> Never:
-        raise NotImplementedError("don't delete config's items")
+        raise NotImplementedError
 
     def __setattr__(self, key: str, value: Any) -> None:
         self._data[key] = value

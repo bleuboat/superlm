@@ -22,8 +22,6 @@ class Tokenizer:
         self.eos_token_ix = self.token_to_ix["<EOS>"]
         self.pad_token_ix = self.token_to_ix["<PAD>"]
         self.unk_token_ix = self.token_to_ix["<UNK>"]
-        if self.unk_token_ix != self.vocab_size:
-            raise AssertionError
         self.special_tokens = {
             self.bos_token_ix,
             self.eos_token_ix,
