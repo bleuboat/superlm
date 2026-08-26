@@ -14,13 +14,10 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
+    "dotenv>=0.9.9",
+    "safetensors>=0.8.0",
     "torch",
-    "dotenv",
-    "safetensors",
 ]
-
-[project.scripts]
-superlm = "superlm:main"
 
 [tool]
 
@@ -29,13 +26,9 @@ typeCheckingMode = "strict"
 reportUnknownMemberType = false
 ignore = ["**/*.in", ".venv/"]
 
-[tool.uv]
-dev-dependencies = ["ruff"]
-
 [tool.ruff]
 line-length = 100
 exclude = ["**/*.in", ".venv/"]
-respect-gitignore = false
 
 [tool.ruff.lint]
 select = [
@@ -53,6 +46,7 @@ select = [
     "FLY",
     "FURB",
     "G",
+    "I",
     "ICN",
     "INP",
     "ISC",
@@ -84,14 +78,9 @@ ignore = [
     "manual-from-import",                      # why not: `import torch.nn as nn`
     "undefined-local-with-import-star",        # why not: `from ... import *`
     "undefined-local-with-import-star-usage",  # why not: `from ... import *`
-    "unsorted-dunder-all",                     # why not: sorted by category
     "non-augmented-assignment",                # why not: unsafe on Tensor
 ]
 preview = true
-
-[tool.ruff.lint.pylint]
-max-args = 10
-max-positional-args = 10
 
 [tool.ruff.lint.per-file-ignores]
 "config.py" = [
@@ -100,4 +89,9 @@ max-positional-args = 10
 ]
 "{run,test}/*.py" = [
     "implicit-namespace-package",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.4",
 ]

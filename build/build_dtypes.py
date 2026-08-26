@@ -1,7 +1,8 @@
-from . import templater
+import re
 from importlib.util import find_spec
 from pathlib import Path
-import re
+
+from . import templater
 
 spec = find_spec("torch")
 if not spec or not spec.origin:

@@ -1,18 +1,17 @@
+from collections.abc import Callable, Generator
+from typing import Unpack, cast
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch import Tensor
-from typing import Unpack, cast
-from collections.abc import Callable, Generator
 
-from superlm.streamer import Streamer
 from superlm.config import GenerationConfig, GenerationConfigTypedDict
 from superlm.models import ModelOutput
+from superlm.streamer import Streamer
 
 from .logits_process import *
 from .stopping_criteria import *
-
 
 __all__ = ["GenerationMixin"]
 
@@ -28,6 +27,7 @@ class GenerationMixin(nn.Module):
     ) -> GenerationConfig:
         generation_config = self.generation_config.copy()
         generation_config.update(**kwargs)
+        generation_config.check()
         if generation_config.max_new_tokens is not None:
             generation_config.max_length = generation_config.max_new_tokens + inputs.shape[-1]
         if generation_config.min_new_tokens is not None:

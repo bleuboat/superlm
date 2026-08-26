@@ -1,21 +1,25 @@
+import json
 import math
-import time
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
+from time import time
+from typing import Any, cast
+from zlib import crc32
+
 import torch
 import torch.optim as optim
 from torch import Tensor
 from torch.utils.data import DataLoader
-from pathlib import Path
 
-from dataclasses import dataclass
-from typing import Any, cast
-from collections.abc import Iterable, Sequence
-
-from .config import TrainingConfig, AdamConfig
-from .tokenizer import Tokenizer
-from .dataset import TextDataset
 from .architectures import CausalLM
+from .config import AdamConfig, TrainingConfig
+from .dataset import TextDataset
+from .paths import CHECKPOINTS_PATH
+from .tokenizer import Tokenizer
 
 __all__ = ["Trainer"]
+
+IS_CUDA_AVAILABLE = torch.cuda.is_available()
 
 
 @dataclass
@@ -35,7 +39,6 @@ class Trainer:
         self,
         tokenizer: Tokenizer,
         model: CausalLM,
-        checkpoint_path: Path,
         data: Iterable[str],
         training_config: TrainingConfig,
         adam_config: AdamConfig,
@@ -43,7 +46,6 @@ class Trainer:
         super().__init__()
         self.tokenizer = tokenizer
         self.model = model
-        self.checkpoint_path = checkpoint_path
 
         self.smooth_loss = math.log(self.tokenizer.vocab_size)
         self.best_loss = 100.0
@@ -66,14 +68,20 @@ class Trainer:
                 dataset=self.dataset,
                 batch_size=self.batch_size,
                 shuffle=True,
-                pin_memory=True,
                 drop_last=True,
+                pin_memory=IS_CUDA_AVAILABLE,
             ),
         )
         self.dataloader_iter = iter(self.dataloader)
         self.num_steps = (
             (self.dataset.length * self.epochs) // (self.model.config.block_size * self.batch_size)
         )
+
+        hash = crc32(
+            json.dumps(dict(self.model.config), sort_keys=True).encode()
+            + self.dataset.dataset.numpy().tobytes(),
+        )
+        self.checkpoint_path = CHECKPOINTS_PATH / f"{hash:x}.pth"
 
     def train_step(self) -> int:
         self.step += 1
@@ -97,9 +105,11 @@ class Trainer:
     def train(self, steps: Sequence[int] | None = None) -> None:
         if self.checkpoint_path.exists():
             self.restart()
+        else:
+            self.checkpoint()
         if steps is None:
             steps = (50, 100, 200)
-        self.start_time = time.time()
+        self.start_time = time()
         while True:
             step = self.train_step()
             if step % steps[0] == 0:
@@ -116,7 +126,7 @@ class Trainer:
 
     def log(self) -> None:
         self.losses.append((self.step, self.smooth_loss))
-        time_used = time.time() - self.start_time
+        time_used = time() - self.start_time
         print("----")
         print(
             f"iter [{self.step}/{self.num_steps}]", "|",
@@ -138,7 +148,7 @@ class Trainer:
         print(txt)
 
     def checkpoint(self) -> None:
-        if self.smooth_loss >= self.best_loss:
+        if self.smooth_loss > self.best_loss:
             return
         self.best_loss = self.smooth_loss
         checkpoint = Checkpoint(
@@ -146,7 +156,9 @@ class Trainer:
             optimizer_state_dict=self.optimizer.state_dict(),
             scheduler_state_dict=self.scheduler.state_dict(),
             torch_random_state=torch.get_rng_state(),
-            cuda_random_state=torch.cuda.get_rng_state(),
+            cuda_random_state=(
+                torch.cuda.get_rng_state() if IS_CUDA_AVAILABLE else torch.get_rng_state()
+            ),
             step=self.step,
             loss=self.smooth_loss,
             losses=self.losses,
@@ -159,7 +171,8 @@ class Trainer:
         self.optimizer.load_state_dict(checkpoint.optimizer_state_dict)
         self.scheduler.load_state_dict(checkpoint.scheduler_state_dict)
         torch.set_rng_state(checkpoint.torch_random_state)
-        torch.cuda.set_rng_state(checkpoint.cuda_random_state)
+        if IS_CUDA_AVAILABLE:
+            torch.cuda.set_rng_state(checkpoint.cuda_random_state)
         self.step = checkpoint.step
         self.smooth_loss = checkpoint.loss
         self.best_loss = checkpoint.loss

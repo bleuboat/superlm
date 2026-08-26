@@ -1,6 +1,7 @@
-from . import templater
-from tomllib import loads
 from pathlib import Path
+from tomllib import loads
+
+from . import templater
 
 pyproject_file = Path("pyproject.toml")
 init_file = Path("src") / "superlm" / "__init__.py"

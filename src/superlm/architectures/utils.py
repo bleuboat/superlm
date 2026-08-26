@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from superlm.config import ModelConfig, GenerationConfig
+from superlm.config import GenerationConfig, ModelConfig
 from superlm.models import GradientCheckpointingLayer, Model, ModelOutput
-
 
 __all__ = ["Architecture"]
 

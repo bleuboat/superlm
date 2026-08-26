@@ -1,6 +1,6 @@
 from torch import Tensor
-from .tokenizer import Tokenizer
 
+from .tokenizer import Tokenizer
 
 __all__ = ["Streamer"]
 

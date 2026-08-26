@@ -1,16 +1,16 @@
 import json
-import torch
-from safetensors.torch import save_model, load_model  # pyright: ignore[reportUnknownVariableType]
-
-from typing import Unpack
 from collections.abc import Callable, Generator, Sequence
+from typing import Unpack
+
+import torch
+from safetensors.torch import load_model, save_model  # pyright: ignore[reportUnknownVariableType]
 
 from .architectures import *
 from .config import *
 from .dtypes import DTYPES
 from .paths import Paths
-from .tokenizer import Tokenizer
 from .streamer import Streamer
+from .tokenizer import Tokenizer
 from .trainer import Trainer
 
 try:
@@ -115,13 +115,12 @@ class WorkSpace:
 
     def _get_model(self) -> CausalLM:
         self.tokenizer.update_config(self.config)
-        return CausalLM(self.config.model, self.config.generation).to(self.device)
+        return CausalLM(self.config.model, self.config.generation).to(self.device).eval()
 
     def _get_trainer(self) -> Trainer:
         return Trainer(
             self.tokenizer,
             self.model,
-            self.paths.checkpoint,
             self.inputs.values(),
             self.config.training,
             self.config.adam,

@@ -1,6 +1,7 @@
-from . import templater
-from pathlib import Path
 import re
+from pathlib import Path
+
+from . import templater
 
 file_config = Path("build") / ".config"
 file_py = Path("src") / "superlm" / "paths.py"

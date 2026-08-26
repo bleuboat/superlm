@@ -1,6 +1,7 @@
+from collections.abc import Callable
+
 import torch.nn.functional as F
 from torch import Tensor
-from collections.abc import Callable
 
 __all__ = ["ACTIVATIONS"]
 

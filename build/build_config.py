@@ -1,13 +1,17 @@
-from . import templater
-from pathlib import Path
 import re
+from pathlib import Path
+
+from . import templater
 
 file_config = Path("build") / ".config"
 file_py = Path("src") / "superlm" / "config.py"
-file_pyi = Path("src") / "superlm" / "config.pyi"
 
 configs: dict[str, tuple[list[tuple[str, str]], list[tuple[str, str, str]]]] = {}
 last_config = None
+
+config_pattern = re.compile(r"(.*?): (.*?) = (.*?)")
+message_pattern = re.compile(r"self.([a-z0-9_]*)")
+
 
 with file_config.open() as f:
     while (line := f.readline()):
@@ -27,12 +31,11 @@ with file_config.open() as f:
             continue
         line = line[1:]
         if line.startswith("!check"):
-            last_config[0].append((
-                line.replace("!check ", ""),
-                f.readline().strip(),
-            ))
+            condition = line.replace("!check ", "")
+            message = message_pattern.sub(r"\1({self.\1})", condition)
+            last_config[0].append((condition, message.replace('"', "'")))
             continue
-        match = re.fullmatch(r"(.*?): (.*?) = (.*?)", line)
+        match = config_pattern.fullmatch(line)
         if match is None:
             raise RuntimeError
         last_config[1].append(match.groups())  # type: ignore
@@ -55,16 +58,14 @@ for config, data in configs.items():
     for name, annotation, default in data[1]:
         origin = re.sub(r"\[.*?\]", "", annotation)
         code += (
-            f'        self.add_param("{name}", {origin}, default={default})\n'
+            f'        self._data["{name}"] = Parameter({origin}, default={default})\n'
         )
     code += "        self.update(kwargs)\n"
     if data[0]:
         code += "\n    def _check_extras(self) -> None:\n"
         for check, message in data[0]:
             code += f"""        if {check}:
-            raise ValueError(
-                f"{message}",
-            )
+            raise ValueError(f"{message}")
 """
 
     all += f'"{config}",\n'

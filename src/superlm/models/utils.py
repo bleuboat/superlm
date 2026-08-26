@@ -1,18 +1,17 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.checkpoint import checkpoint  # pyright: ignore[reportUnknownVariableType]
-
-from torch import Tensor
-from typing import Any
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
+from typing import Any
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
+from torch.utils.checkpoint import checkpoint  # pyright: ignore[reportUnknownVariableType]
 
 from superlm.config import ModelConfig
 
-
-__all__ = ["GradientCheckpointingLayer", "Embedding", "ModelOutput", "Model"]
+__all__ = ["Embedding", "GradientCheckpointingLayer", "Model", "ModelOutput"]
 
 MODEL_CLASSES: dict[str, type[Model]] = {}
 

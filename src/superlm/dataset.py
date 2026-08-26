@@ -1,10 +1,11 @@
-import torch
-from torch.utils.data import Dataset
-from torch import Tensor
-from typing import cast
 from collections.abc import Iterable
-from .tokenizer import Tokenizer
+from typing import cast
 
+import torch
+from torch import Tensor
+from torch.utils.data import Dataset
+
+from .tokenizer import Tokenizer
 
 __all__ = ["TextDataset"]
 

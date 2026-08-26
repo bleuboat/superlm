@@ -1,6 +1,6 @@
+${imports}
 from .utils import *
 from .utils import __all__
-${imports}
 
 __all__ += [
     ${all}

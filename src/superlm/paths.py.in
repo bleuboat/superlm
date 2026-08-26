@@ -1,9 +1,9 @@
 import os
-import dotenv
 from pathlib import Path
 
+import dotenv
 
-__all__ = ["Paths"]
+__all__ = ["CHECKPOINTS_PATH", "WORKSPACE_PATH", "Paths"]
 
 
 dotenv.load_dotenv()
@@ -11,7 +11,10 @@ path = os.getenv("WORKSPACE_PATH")
 if path is None:
     path = "workspace"
     dotenv.set_key(".env", "WORKSPACE_PATH", path)
+
 WORKSPACE_PATH = Path(path)
+CHECKPOINTS_PATH = WORKSPACE_PATH / ".checkpoints"
+CHECKPOINTS_PATH.mkdir(parents=True, exist_ok=True)
 
 
 class Paths:

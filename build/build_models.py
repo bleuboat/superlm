@@ -1,6 +1,7 @@
-from . import templater
-from pathlib import Path
 import re
+from pathlib import Path
+
+from . import templater
 
 path = Path("src") / "superlm"
 ignore = {"__init__.py", "__init__.py.in", "utils.py"}

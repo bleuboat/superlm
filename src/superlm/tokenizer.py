@@ -1,11 +1,12 @@
 import re
+from collections.abc import Container, Iterable
+from typing import cast
+
 import torch
 from torch import Tensor
 from torch._prims_common import DeviceLikeType
-from typing import cast
-from collections.abc import Container, Iterable
-from .config import ConfigGroup
 
+from .config import ConfigGroup
 
 __all__ = ["Tokenizer"]
 

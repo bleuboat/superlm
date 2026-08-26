@@ -2,10 +2,11 @@ __all__ = [
     ${all}
 ]
 
-from .activations import ACTIVATIONS
-from types import UnionType
-from typing import Any, Never, Self, TypedDict, NotRequired, Unpack
 from collections.abc import Iterator, MutableMapping
+from types import UnionType
+from typing import Any, Never, NotRequired, Self, TypedDict, Unpack
+
+from .activations import ACTIVATIONS
 
 
 class Parameter:
@@ -65,8 +66,25 @@ class Config(MutableMapping[str, Any]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({", ".join(f"{k}={self[k]!r}" for k in self)})"
 
-    def __hash__(self) -> int:
-        return hash(tuple(self.items()))
+    def __call__(self, *keys: str, **configs: Unpack[AllConfigTypedDict]) -> tuple[Any] | None:
+        if keys and configs:
+            raise RuntimeError
+        if keys:
+            return self._get(keys)
+        if configs:
+            return self._set(configs)
+        return None
+
+    def _get(self, keys: tuple[str, ...]) -> tuple[Any]:
+        out: list[Any] = []
+        for k in keys:
+            out.append(self[k])
+        return tuple(out)
+
+    def _set(self, configs: AllConfigTypedDict) -> None:
+        for k in configs:
+            self[k] = configs[k]
+        self.check()
 
     def _check_params(self) -> None:
         for name, param in self._data.items():
@@ -81,7 +99,7 @@ class Config(MutableMapping[str, Any]):
                     f"got {type(param.get()).__name__}",
                 )
 
-    def _check_extras(self) -> None:  # ruff: ignore[no-self-use]
+    def _check_extras(self) -> None:
         return
 
     def check(self) -> None:
@@ -93,9 +111,6 @@ class Config(MutableMapping[str, Any]):
         for k, v in self._data.items():
             out[k] = v.value
         return out
-
-    def add_param(self, name: str, annotation: type | UnionType, default: Any) -> None:
-        self._data[name] = Parameter(annotation, default)
 
 
 class ConfigGroupBase(MutableMapping[str, Config]):

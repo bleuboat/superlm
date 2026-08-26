@@ -1,10 +1,13 @@
+from collections.abc import Callable
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from collections.abc import Callable
+
 from superlm.activations import ACTIVATIONS
 from superlm.config import ModelConfig
+
 from .utils import Embedding, GradientCheckpointingLayer, Model, ModelOutput
 
 

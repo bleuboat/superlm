@@ -1,10 +1,13 @@
+from typing import cast
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import cast
-from superlm.config import ModelConfig, GenerationConfig
+
+from superlm.config import GenerationConfig, ModelConfig
 from superlm.models import ModelOutput
+
 from .utils import Architecture
 
 
