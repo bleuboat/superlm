@@ -46,7 +46,9 @@ class Embedding(nn.Module):
             self.weight[self.pad_token_ix].fill_(0)
 
     def forward(self, input: Tensor) -> Tensor:
-        weight = torch.cat((self.weight, self.weight[:-1].mean(0, keepdim=True)))
+        weight = self.weight
+        if not self.training:
+            weight = torch.cat((weight, weight[:-1].mean(0, keepdim=True)))
         return F.embedding(input, weight, self.pad_token_ix)
 
 
