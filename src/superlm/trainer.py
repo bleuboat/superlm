@@ -1,6 +1,6 @@
 import json
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
 from time import time
 from typing import Any, cast
@@ -102,21 +102,19 @@ class Trainer:
             self.optimizer.zero_grad()
         return self.step
 
-    def train(self, steps: Sequence[int] | None = None) -> None:
+    def train(self, log: int = 50, sample: int = 100, checkpoint: int = 200) -> None:
         if self.checkpoint_path.exists():
             self.restart()
         else:
             self.checkpoint()
-        if steps is None:
-            steps = (50, 100, 200)
         self.start_time = time()
         while True:
             step = self.train_step()
-            if step % steps[0] == 0:
+            if step % log == 0:
                 self.log()
-            if step % steps[1] == 0:
+            if step % sample == 0:
                 self.sample()
-            if step % steps[2] == 0:
+            if step % checkpoint == 0:
                 self.checkpoint()
             if step >= self.num_steps:
                 break

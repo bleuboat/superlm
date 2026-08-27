@@ -1,5 +1,5 @@
 import json
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Generator
 from typing import Unpack
 
 import torch
@@ -145,10 +145,10 @@ class WorkSpace:
         if getattr(self, "_model", None) is not None:
             self.model.to(self.device)
 
-    def train(self, steps: Sequence[int] | None = None) -> None:
+    def train(self, log: int = 50, sample: int = 100, checkpoint: int = 200) -> None:
         self.save()
         self.model.train()
-        self.trainer.train(steps)
+        self.trainer.train(log, sample, checkpoint)
         self.model.eval()
         self.save()
         self.show_losses(self.trainer.losses)
