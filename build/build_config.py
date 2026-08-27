@@ -69,6 +69,11 @@ for config, data in configs.items():
             msg = f"{message}"
             raise ValueError(msg)
 """
+    code += (
+        f"\n    def __call__(self, *keys: str, **configs: Unpack[{config}TypedDict])"
+        f" -> tuple[Any] | None:\n"
+        f"        return super().__call__(*keys, **configs)\n"
+    )
 
     all += f'"{config}",\n'
     all += f'"{config}TypedDict",\n'

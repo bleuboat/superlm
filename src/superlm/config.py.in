@@ -71,7 +71,7 @@ class Config(MutableMapping[str, Any]):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({", ".join(f"{k}={self[k]!r}" for k in self)})"
 
-    def __call__(self, *keys: str, **configs: Unpack[AllConfigTypedDict]) -> tuple[Any] | None:
+    def __call__(self, *keys: str, **configs: Any) -> tuple[Any] | None:
         if keys and configs:
             raise RuntimeError
         if keys:
@@ -83,9 +83,9 @@ class Config(MutableMapping[str, Any]):
     def _get(self, keys: tuple[str, ...]) -> tuple[Any]:
         return tuple(self[k] for k in keys)
 
-    def _set(self, configs: AllConfigTypedDict) -> None:
-        for k in configs:
-            self[k] = configs[k]
+    def _set(self, configs: dict[str, Any]) -> None:
+        for k, v in configs.items():
+            self[k] = v
         self.check()
 
     def check(self) -> None:
