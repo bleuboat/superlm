@@ -3,10 +3,6 @@
 # ruff: file-ignore[complex-structure]
 # ruff: file-ignore[too-many-branches]
 
-__all__ = [  # ruff: ignore[unsorted-dunder-all]
-    ${all}
-]
-
 from collections.abc import Iterator, MutableMapping
 from types import UnionType
 from typing import Any, Never, NotRequired, Self, TypedDict, Unpack

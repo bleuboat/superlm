@@ -1,4 +1,4 @@
-from superlm import *
+from superlm import WorkSpace
 
 space = WorkSpace("luxun/test", seed=42)
 space.config.model(model_type="transformer", n_embd=64)

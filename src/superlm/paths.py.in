@@ -3,9 +3,6 @@ from pathlib import Path
 
 import dotenv
 
-__all__ = ["CHECKPOINTS_PATH", "WORKSPACE_PATH", "Paths"]
-
-
 dotenv.load_dotenv()
 path = os.getenv("WORKSPACE_PATH")
 if path is None:
@@ -23,13 +20,6 @@ class Paths:
         self.root.mkdir(exist_ok=True)
         self.space_name = space_name
         self.model_name = model_name
-
-    def __setattr__(self, name: str, value: str | Path) -> None:
-        super().__setattr__(name, value)
-        if name == "model_name":
-            self._get_paths()
-
-    def _get_paths(self) -> None:
         root = self.root
         input = "inputs"
         model = f"models--{self.model_name}"

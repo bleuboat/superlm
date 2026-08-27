@@ -81,8 +81,6 @@ select = [
 ignore = [
     "lowercase-imported-as-non-lowercase",     # why not: `import torch.nn.functional as F`
     "manual-from-import",                      # why not: `import torch.nn as nn`
-    "undefined-local-with-import-star",        # why not: `from ... import *`
-    "undefined-local-with-import-star-usage",  # why not: `from ... import *`
     "non-augmented-assignment",                # why not: unsafe on Tensor
     "D1",                                      # why not: too much docstring
 ]

@@ -5,8 +5,8 @@ from typing import Unpack
 import torch
 from safetensors.torch import load_model, save_model  # pyright: ignore[reportUnknownVariableType]
 
-from .architectures import *
-from .config import *
+from .architectures import CausalLM
+from .config import ConfigGroup, GenerationConfigTypedDict
 from .dtypes import DTYPES
 from .paths import Paths
 from .streamer import Streamer
@@ -17,12 +17,6 @@ try:
     import matplotlib.pyplot as plt
 except ModuleNotFoundError:
     plt = None
-
-
-__all__ = ["WorkSpace"]
-
-DEFAULT_DTYPE = "bfloat16" if torch.cuda.is_bf16_supported() else "float32"
-DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class WorkSpace:
@@ -41,61 +35,9 @@ class WorkSpace:
         self.paths = Paths(*path.split("/"))
         self.config = ConfigGroup()
 
-        self._inputs = None
-        self._tokenizer = None
-        self._streamer = None
-        self._model = None
-        self._trainer = None
+        ${init}
 
-    @property
-    def inputs(self) -> dict[str, str]:
-        if self._inputs is None:
-            self._inputs = self._get_inputs()
-        return self._inputs
-
-    @property
-    def tokenizer(self) -> Tokenizer:
-        if self._tokenizer is None:
-            self._tokenizer = self._get_tokenizer()
-        return self._tokenizer
-
-    @property
-    def streamer(self) -> Streamer:
-        if self._streamer is None:
-            self._streamer = self._get_streamer()
-        return self._streamer
-
-    @property
-    def model(self) -> CausalLM:
-        if self._model is None:
-            self._model = self._get_model()
-        return self._model
-
-    @property
-    def trainer(self) -> Trainer:
-        if self._trainer is None:
-            self._trainer = self._get_trainer()
-        return self._trainer
-
-    @inputs.setter
-    def inputs(self, value: dict[str, str] | None) -> None:
-        self._inputs = value
-
-    @tokenizer.setter
-    def tokenizer(self, value: Tokenizer | None) -> None:
-        self._tokenizer = value
-
-    @streamer.setter
-    def streamer(self, value: Streamer | None) -> None:
-        self._streamer = value
-
-    @model.setter
-    def model(self, value: CausalLM | None) -> None:
-        self._model = value
-
-    @trainer.setter
-    def trainer(self, value: Trainer | None) -> None:
-        self._trainer = value
+    ${properties}
 
     def _get_inputs(self) -> dict[str, str]:
         if not self.paths.inputs.exists():
@@ -134,13 +76,13 @@ class WorkSpace:
 
     def set_dtype(self, dtype: str | None) -> None:
         if dtype is None:
-            dtype = DEFAULT_DTYPE
+            dtype = "${default_dtype}"
         self.dtype = DTYPES[dtype]
         torch.set_default_dtype(self.dtype)
 
     def set_device(self, device: str | None) -> None:
         if device is None:
-            device = DEFAULT_DEVICE
+            device = "${default_device}"
         self.device = torch.device(device)
         if getattr(self, "_model", None) is not None:
             self.model.to(self.device)
@@ -186,10 +128,10 @@ class WorkSpace:
             json.dumps(self.tokenizer.tokens), encoding="utf-8",
         )
         self.paths.config.write_text(
-            json.dumps(dict(self.model.config), indent=2),
+            json.dumps(dict(self.config.model), indent=2),
         )
         self.paths.generation_config.write_text(
-            json.dumps(dict(self.model.generation_config), indent=2),
+            json.dumps(dict(self.config.generation), indent=2),
         )
         save_model(self.model, str(self.paths.model))
 
@@ -204,11 +146,11 @@ class WorkSpace:
         self.tokenizer = Tokenizer(
             json.loads(self.paths.vocab.read_text(encoding="utf-8")),
         )
-        self.config.model = ModelConfig(
-            **json.loads(self.paths.config.read_text()),
+        self.config.model.update(
+            json.loads(self.paths.config.read_text()),
         )
-        self.config.generation = GenerationConfig(
-            **json.loads(self.paths.generation_config.read_text()),
+        self.config.generation.update(
+            json.loads(self.paths.generation_config.read_text()),
         )
         load_model(self.model, self.paths.model)
 

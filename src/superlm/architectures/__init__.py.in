@@ -1,7 +1,7 @@
 ${imports}
-from .utils import *
-from .utils import __all__
+from .utils import Architecture
 
-__all__ += [
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     ${all}
+    "Architecture",
 ]

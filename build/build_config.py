@@ -3,7 +3,7 @@ from pathlib import Path
 
 from . import templater
 
-file_config = Path("build") / ".config"
+file_config = Path("build") / "vars" / "config.txt"
 file_py = Path("src") / "superlm" / "config.py"
 
 configs: dict[str, tuple[list[tuple[str, str]], list[tuple[str, str, str]]]] = {}

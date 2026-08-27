@@ -1,7 +1,9 @@
 ${imports}
-from .utils import *
-from .utils import __all__
+from .utils import GradientCheckpointingLayer, Model, ModelOutput
 
-__all__ += [
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     ${all}
+    "GradientCheckpointingLayer",
+    "Model",
+    "ModelOutput",
 ]

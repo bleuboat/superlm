@@ -1,17 +1,18 @@
 import re
-from importlib.util import find_spec
 from pathlib import Path
+
+import torch
 
 from . import templater
 
-spec = find_spec("torch")
-if not spec or not spec.origin:
-    raise RuntimeError
+deprecated = re.compile(r"bit|u?int[1-7]")
 
-torch = Path(spec.origin).parent
-C = torch / "_C" / "__init__.pyi"
-dtypes: list[str] = re.findall(r"^(.*?): dtype = ...$", C.read_text(), flags=re.MULTILINE)
-
+dtypes = (
+    name
+    for name in dir(torch)
+    if isinstance(getattr(torch, name), torch.dtype)
+    and not deprecated.fullmatch(name)
+)
 dtypes_dict = "".join(f'"{dtype}": torch.{dtype},\n' for dtype in dtypes)
 dtypes_file = Path("src") / "superlm" / "dtypes.py"
 templater.apply(dtypes_file)

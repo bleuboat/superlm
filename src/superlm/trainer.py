@@ -17,8 +17,6 @@ from .dataset import TextDataset
 from .paths import CHECKPOINTS_PATH
 from .tokenizer import Tokenizer
 
-__all__ = ["Trainer"]
-
 IS_CUDA_AVAILABLE = torch.cuda.is_available()
 
 

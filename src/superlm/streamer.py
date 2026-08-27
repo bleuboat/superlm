@@ -2,8 +2,6 @@ from torch import Tensor
 
 from .tokenizer import Tokenizer
 
-__all__ = ["Streamer"]
-
 
 class Streamer:
     def __init__(self, tokenizer: Tokenizer, *, skip_prompt: bool = False) -> None:

@@ -7,8 +7,6 @@ from torch.utils.data import Dataset
 
 from .tokenizer import Tokenizer
 
-__all__ = ["TextDataset"]
-
 
 class TextDataset(Dataset[tuple[Tensor, Tensor]]):
     def __init__(self, tokenizer: Tokenizer, data: Iterable[str], block_size: int) -> None:

@@ -1,0 +1,17 @@
+import torch
+from torch import Tensor
+
+
+class LogitsProcessor:
+    def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
+        raise NotImplementedError
+
+
+class LogitsProcessorList(list[LogitsProcessor], LogitsProcessor):
+    def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
+        for processor in self:
+            scores = processor(input_ids, scores)
+        return scores
+
+
+${processors}

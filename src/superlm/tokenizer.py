@@ -8,8 +8,6 @@ from torch._prims_common import DeviceLikeType
 
 from .config import ConfigGroup
 
-__all__ = ["Tokenizer"]
-
 PATTERN = re.compile(r"(?i:'s|'t|'re|'ve|'m|'ll|'d)| ?[A-Za-z]+|[\r\n]+|\s+|.")
 
 

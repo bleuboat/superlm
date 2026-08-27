@@ -1,11 +1,18 @@
+print("loading pytorch...")
+
+import torch as torch  # ruff: ignore[module-import-not-at-top-of-file, useless-import-alias]
+
 for name in (
-    "build_requirements",
-    "build_config",
-    "build_dtypes",
-    "build_init",
-    "build_models",
-    "build_paths",
-    "build_pycache",
+    "requirements",
+    "config",
+    "dtypes",
+    "init",
+    "paths",
+    "models",
+    "logits_processor",
+    "generation",
+    "workspace",
+    "pycache",
 ):
-    print(f"building {name.split("_")[-1]}...")
-    __import__("", globals(), locals(), (name,), 1)
+    print(f"building {name}...")
+    __import__("", globals(), locals(), (f"build_{name}",), 1)

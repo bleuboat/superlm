@@ -3,8 +3,6 @@ from collections.abc import Callable
 import torch.nn.functional as F
 from torch import Tensor
 
-__all__ = ["ACTIVATIONS"]
-
 ACTIVATIONS: dict[str, Callable[[Tensor], Tensor]] = {
     "relu": F.relu,
     "rrelu": F.rrelu,

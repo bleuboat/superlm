@@ -24,9 +24,9 @@ class MaxLengthCriteria(StoppingCriteria):
 
 
 class MaxTimeCriteria(StoppingCriteria):
-    def __init__(self, max_time: float, initial_timestamp: float | None = None) -> None:
+    def __init__(self, max_time: float) -> None:
         self.max_time = max_time
-        self.initial_timestamp = time.time() if initial_timestamp is None else initial_timestamp
+        self.initial_timestamp = time.time()
 
     def __call__(self, input_ids: Tensor) -> bool:
         return time.time() - self.initial_timestamp > self.max_time
