@@ -87,10 +87,10 @@ select = [
     "W",
 ]
 ignore = [
-    "lowercase-imported-as-non-lowercase",     # why not: `import torch.nn.functional as F`
-    "manual-from-import",                      # why not: `import torch.nn as nn`
-    "non-augmented-assignment",                # why not: unsafe on Tensor
-    "D1",                                      # why not: too much docstring
+    "lowercase-imported-as-non-lowercase",  # why not: `import torch.nn.functional as F`
+    "manual-from-import",                   # why not: `import torch.nn as nn`
+    "non-augmented-assignment",             # why not: unsafe on Tensor
+    "D1",                                   # why not: too much docstring
 ]
 preview = true
 
