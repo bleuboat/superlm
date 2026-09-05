@@ -3,7 +3,6 @@ print("loading pytorch...")
 import torch as torch  # ruff: ignore[module-import-not-at-top-of-file, useless-import-alias]
 
 for name in (
-    "requirements",
     "config",
     "dtypes",
     "init",

@@ -17,4 +17,3 @@ src/superlm/architectures/__init__.py
 src/superlm/generation/logits_processor.py
 src/superlm/generation/utils.py
 src/superlm/models/__init__.py
-requirements.txt
